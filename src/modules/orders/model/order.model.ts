@@ -1,7 +1,8 @@
 import { Schema, SchemaFactory, Prop } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
+import shortUUID from "short-uuid";
 
-export const enum OrderStatus {
+export enum OrderStatus {
   PENDING = 'pending',
   PROCESSING = 'processing',
   COMPLETED = 'completed',
@@ -10,8 +11,18 @@ export const enum OrderStatus {
 
 @Schema({ timestamps: true })
 export class Order extends Document {
-  @Prop({ ref: 'User', type: Types.ObjectId })
-  userId: Types.ObjectId;
+
+      @Prop({ 
+            type: String,
+             default: () => shortUUID.generate(), 
+             unique: true, 
+             index: true, 
+             required: true 
+            })
+        _id = String;
+
+    @Prop({ ref: 'User', type: Types.ObjectId })
+    userId: Types.ObjectId;
  
     @Prop({ type: [{ productId: { type: Types.ObjectId, ref: 'Product' }, quantity: { type: Number, default: 1 } }] })
     products: { productId: Types.ObjectId; quantity: number }[];  

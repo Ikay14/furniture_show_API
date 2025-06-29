@@ -61,6 +61,12 @@ export class  User extends Document {
   @Prop({})
   wishList?: string[];
 
+  @Prop({})
+  otp: string;
+
+  @Prop({})
+  otpExpires: Date;
+
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
