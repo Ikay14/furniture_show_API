@@ -12,7 +12,7 @@ export class Product extends Document {
              index: true, 
              required: true 
             })
-        _id = String;
+        _ids = String;
 
     @Prop({ 
         type: String,
@@ -20,7 +20,7 @@ export class Product extends Document {
      })
     name: String;
 
-    @Prop({ required: true })
+  @Prop({ required: true })
   description: string;
 
   @Prop({ required: true })
@@ -32,16 +32,16 @@ export class Product extends Document {
   @Prop({ required: true, default: 0 })
   inStock: number;
 
-    @Prop()
+  @Prop()
   sku?: string;
 
-    @Prop({ required: true })
+  @Prop({ required: true })
   images: string[]; 
 
   @Prop()
   mainImage?: string;
 
-    @Prop()
+  @Prop()
   thumbnail?: string;
 
     @Prop({
@@ -79,7 +79,7 @@ export class Product extends Document {
     numReviews: number;
 
     @Prop({ default: false })
-    isFeatured: boolean;
+    isDeleted: boolean;
 
     @Prop({ default: 'active' })
     status: 'active' | 'inactive' | 'draft';

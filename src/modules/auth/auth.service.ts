@@ -42,6 +42,7 @@ export class AuthService {
          const accessToken = this.generateAccessToken(newUser)
         return {
             msg: 'new user created successfully',
+            accessToken,
             newUser
         }
     }

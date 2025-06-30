@@ -20,7 +20,7 @@ export class  User extends Document {
          index: true, 
          required: true 
         })
-    _id = String;
+    _ids = String;
 
     @Prop({
       type: String,

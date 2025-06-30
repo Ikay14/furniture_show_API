@@ -26,14 +26,6 @@ export class ProductDTO {
     @IsString()
     stock: string;
 
-    @IsString()
-    image: string;
-
-    @IsString()
-    mainImage: string;
-
-    file: Express.Multer.File;
-
     @IsObject()
     @ValidateNested()
     @Type(() => DimensionsDto)
