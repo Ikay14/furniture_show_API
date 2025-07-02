@@ -3,15 +3,12 @@ import { Document } from "mongoose";
 import shortUUID from "short-uuid";
 
 
-export interface IUser {
-  _id: shortUUID.UUID;
-  username: string;
-  email: string;
-  password: string;
- role?: string; // Optional field for user role
-}
+export type UserDocument = User & Document & {
+  sanitize(): Partial<User>;
+};
+
 @Schema({ timestamps: true })
-export class  User extends Document { 
+export class User extends Document {
   
     @Prop({ 
         type: String,
@@ -70,3 +67,14 @@ export class  User extends Document {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.methods.sanitize = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  delete obj.otp;
+  delete obj.otpExpires;
+  delete obj.__v;
+  delete obj.updatedAt;
+  return obj;
+  
+};

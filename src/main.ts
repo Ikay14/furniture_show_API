@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { initializeDatabase,  } from './config/db.config';
+import { client, initializeDatabase,  } from './config/db.config';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { TransformInterceptor } from './common/global-Interceptor';
 import * as cookieParser from 'cookie-parser';
@@ -13,8 +13,8 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule,{
     bufferLogs: true,
-     logger: new ConsoleLogger({
-    prefix: 'Show_room__API',
+    logger: new ConsoleLogger({
+    prefix: 'ShopFurYou_API',
     logLevels: ['log', 'error', 'warn', 'debug', 'verbose'],
   }),
   }); 
@@ -28,14 +28,14 @@ async function bootstrap() {
     process.exit(1); 
   }
 
-  // try {
-  //   await client.connect();
-  //   console.log('Connected to Redis');
-  // } catch (error) {
-  //   console.error('Failed to connect to Redis:', error);
-  //   process.exit(1); 
-  // }
-  
+  try {
+    await client.connect();
+    console.log('Connected to Redis');
+  } catch (error) {
+    console.error('Failed to connect to Redis:', error);
+    process.exit(1);
+  }
+
   app.use(cookieParser(process.env.COOKIE_SECRET));
 
   app.useGlobalPipes(new ValidationPipe({transform: true}))

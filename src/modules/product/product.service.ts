@@ -60,7 +60,7 @@ export class ProductService {
     } catch (err) {
         throw new InternalServerErrorException('Image upload failed. Please try again later.');
     }
-
+ 
 
     const product = await this.productModel.findOneAndUpdate(
         { productId },
