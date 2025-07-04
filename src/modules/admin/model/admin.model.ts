@@ -2,6 +2,16 @@ import { Document } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import shortUUID from "short-uuid";
 
+
+export enum Roles {
+  ADMIN = 'admin',
+  SUPERADMIN = 'superadmin',
+}
+
+export type AdminDocument = Admin & Document & {
+  sanitize(): Partial<Admin>;
+};
+
 @Schema({ timestamps: true })
 export class Admin extends Document {
 
@@ -23,6 +33,19 @@ export class Admin extends Document {
         required: true })
         password: string;
 
+    @Prop({
+            type: [String],
+            enum: Object.values(Roles),
+            default: [Roles.ADMIN]
+        })
+        roles: string[];
+    
+      @Prop({})
+      otp: string;
+    
+      @Prop({})
+      otpExpires: Date;    
+
     @Prop({ 
         default: false })
         isSuperAdmin: boolean;
@@ -36,3 +59,14 @@ export class Admin extends Document {
 }
 
 export const AdminSchema = SchemaFactory.createForClass(Admin);
+
+AdminSchema.methods.sanitize = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  delete obj.otp;
+  delete obj.otpExpires;
+  delete obj.__v;
+  delete obj.updatedAt;
+  return obj;
+  
+};

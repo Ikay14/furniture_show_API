@@ -19,7 +19,7 @@ export class Order extends Document {
              index: true, 
              required: true 
             })
-        _id = String;
+        _ids = String;
 
     @Prop({ ref: 'User', type: Types.ObjectId })
     userId: Types.ObjectId;

@@ -125,7 +125,7 @@ export class AuthService {
 
     private async generateAccessToken(user: User){
         const payload = {
-            id: user._id,
+            id: user._ids,
             email: user.email
         }
 
