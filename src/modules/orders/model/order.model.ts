@@ -22,10 +22,10 @@ export class Order extends Document {
         _ids = String;
 
     @Prop({ ref: 'User', type: Types.ObjectId })
-    userId: Types.ObjectId;
+    userId: Types.ObjectId
  
     @Prop({ type: [{ productId: { type: Types.ObjectId, ref: 'Product' }, quantity: { type: Number, default: 1 } }] })
-    products: { productId: Types.ObjectId; quantity: number }[];  
+    products: { productId: Types.ObjectId; quantity: number }[]
 
     @Prop({ type: Number, default: 0 })
     totalPrice: number;               

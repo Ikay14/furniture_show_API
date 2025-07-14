@@ -1,11 +1,16 @@
-import { Controller, UseInterceptors, Param, Query, Post, Patch, Body, Get, Delete, Req } from "@nestjs/common";
+import { Controller, UseInterceptors, Param, Query, Post, Patch, Body, Get, Delete, Req, UseGuards } from "@nestjs/common";
 import { ProductManagementService } from "../services/product-management.service";
 import { ProductDTO } from "src/modules/product/DTO/product.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { ProductImageDto } from "src/modules/product/DTO/product.image.dto";
 import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
+import { JwtAuthGuard } from "src/guards/jwt.guard";
+import { RolesGuard } from "../guards/admin.auth-guard";
+import { Roles } from "../guards/roles.guard";
 
 @Controller('admin/product-management')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin', 'super-admin')
 export class ProductManagementController {
      constructor(
         private productService: ProductManagementService,
