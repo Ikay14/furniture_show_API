@@ -73,4 +73,15 @@ export class CartsService {
         };
     }
 
+
+    async removeCart(cartId:string, userId: string): Promise<{ msg: string }> {
+
+        const cart = await this.cartModel.findOneAndDelete({ _id: cartId, user: userId });
+
+        if (!cart) throw new NotFoundException(`Cart with id ${cartId} not found for user with id ${userId}`)
+
+        if (cart.isPurchased) throw new NotFoundException(`Cart with id ${cartId} has already been purchased and cannot be deleted`)   
+
+        return { msg: 'Cart removed successfully' };
+    }
 }

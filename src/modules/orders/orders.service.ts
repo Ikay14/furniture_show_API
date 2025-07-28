@@ -1,4 +1,102 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Order } from './model/order.model';
+import { Model, Connection } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import { Product } from '../product/model/product.model';
+import { Cart } from '../carts/model/carts.model';
+import { InjectConnection } from '@nestjs/mongoose';
+import { generateOrderRef } from 'src/utils/generate.order.reference';
+import { OrderStatus } from './model/order.model';
+
 
 @Injectable()
-export class OrdersService {}
+export class OrdersService {
+    constructor(
+        @InjectModel(Order.name) private orderModel: Model<Order>,
+        @InjectModel(Cart.name) private cartModel: Model<Cart>,
+        @InjectModel(Product.name) private productModel: Model<Product>,
+        @InjectConnection() private readonly connection: Connection
+    ){}
+
+    async createOrder(userId: string, cartId: string): Promise<{ msg: string; order: any }> {
+    const session = await this.connection.startSession()
+    session.startTransaction()
+
+    try {
+        const cart = await this.cartModel.findOne({ _id: cartId, user: userId }).session(session)
+        if (!cart || cart.products.length === 0) throw new BadRequestException('Empty or invalid cart')
+
+
+      // Validate products
+        const productIds = cart.products.map(p => p.productId);
+        const foundProducts = await this.productModel.find({ _id: { $in: productIds } }).session(session)
+
+        if (foundProducts.length !== productIds.length) throw new NotFoundException('One or more products not found');
+      
+
+      // Check stock levels
+        for (const item of cart.products) {
+        const product = foundProducts.find(p => p.id.equals(item.productId));
+        if (!product || product.inStock < item.quantity) throw new BadRequestException(`Product ${product?.name || item.productId} is out of stock`);
+
+        }
+
+      // Reduce stock
+        for (const item of cart.products) {
+        await this.productModel.updateOne(
+            { _id: item.productId },
+            { $inc: { inStock: -item.quantity } },
+            { session }
+        )
+}
+        const order = await this.orderModel.create(
+        [{
+            user: userId,
+            cart: cartId,
+            products: cart.products,
+            totalPrice: cart.totalPrice,
+            orderRef: generateOrderRef(),
+            status: OrderStatus.PROCESSING
+        }],
+        { session }
+)
+
+      // mark user cart as inactive
+      await this.cartModel.updateOne({ _id: cartId }, { isActive: false }, { session })
+
+      // Commit transaction
+      await session.commitTransaction()
+      session.endSession()
+
+      return {
+        msg: 'Order created successfully',
+        order: order[0] // Because create returns an array
+      };
+
+
+    } catch (err) {
+      await session.abortTransaction();
+      session.endSession();
+      throw err;
+    }
+  }
+ 
+    async getUserOrders(userId: string): Promise<{ msg: string; orders: Order[] }> {
+
+        const orders = await this.orderModel.find({ user: userId })
+        .populate('products.productId')
+        .populate('user', 'username email')
+        .populate('cart', 'products totalPrice')
+    
+        if (!orders || orders.length === 0) {
+        throw new NotFoundException(`No orders found for user with id ${userId}`);
+        }
+    
+        return {
+        msg: 'User orders fetched successfully',
+        orders
+        }
+    }
+}
+
+

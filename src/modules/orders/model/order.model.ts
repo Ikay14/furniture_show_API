@@ -12,18 +12,18 @@ export enum OrderStatus {
 @Schema({ timestamps: true })
 export class Order extends Document {
 
-      @Prop({ 
-            type: String,
-             default: () => shortUUID.generate(), 
-             unique: true, 
-             index: true, 
-             required: true 
-            })
-        _ids = String;
+    @Prop({ 
+        type: String,
+        default: () => shortUUID.generate(), 
+        unique: true, 
+        index: true, 
+        required: true 
+      })
+    _ids = String;
 
     @Prop({ ref: 'User', type: Types.ObjectId })
-    userId: Types.ObjectId
- 
+    user: Types.ObjectId;
+
     @Prop({ type: [{ productId: { type: Types.ObjectId, ref: 'Product' }, quantity: { type: Number, default: 1 } }] })
     products: { productId: Types.ObjectId; quantity: number }[]
 
@@ -33,6 +33,9 @@ export class Order extends Document {
     @Prop({ type: Boolean, default: false })
     isPaid: boolean;
 
+    @Prop({ type: String, default: 'card' })
+    paymentMethod: string;
+
     @Prop({ type: Boolean, default: false })
     isDelivered: boolean;
 
@@ -41,6 +44,9 @@ export class Order extends Document {
 
     @Prop({ type: Date })
     paidAt: Date;
+
+    @Prop({ type: Boolean, default: true })
+    isActive: boolean;
 
     @Prop({ type: String, default: 'pending' })
     status: OrderStatus;

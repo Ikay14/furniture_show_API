@@ -3,15 +3,13 @@ import mongoose, { Document, Types } from "mongoose";
 
 
 @Schema({ timestamps: true })
-export class Cart extends Document {
+export class Cart extends Document
+ {
   @Prop({ ref: 'User', type: Types.ObjectId })
   user: Types.ObjectId;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Product' })
-  products: Types.ObjectId[] 
-
-  @Prop({ type: Number, default: 1 })
-  quantity: number;
+  @Prop({ type: [{ productId: { type: Types.ObjectId, ref: 'Product' }, quantity: { type: Number, default: 1 } }] })
+  products: { productId: Types.ObjectId; quantity: number }[]
 
   @Prop({ type: Number, default: 0 })
   totalPrice: number;

@@ -11,6 +11,8 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { CartsModule } from './modules/carts/carts.module';
+import { OrdersModule } from './modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -29,8 +31,10 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     ProductModule,
     UserModule,
     AuthModule,
-    ReviewsModule
-  ],
+    ReviewsModule,
+    CartsModule,
+    OrdersModule
+  ], 
   controllers: [AppController],
   providers: [AppService],
 })
