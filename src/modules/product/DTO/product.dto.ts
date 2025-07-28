@@ -18,6 +18,9 @@ export class ProductDTO {
     name: string;
 
     @IsString()
+    category: string;
+    
+    @IsString()
     description_of_product: string;
 
     @IsString()

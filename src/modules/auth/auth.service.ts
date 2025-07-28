@@ -86,6 +86,7 @@ export class AuthService {
         // If OTP is valid, clear the OTP and its expiration
         user.otp = ''
         user.otpExpires = new Date(0) // Set to a past date to indicate expiration
+        user.isVerified = true
         await user.save();
         return {
             msg: 'OTP validated successfully'

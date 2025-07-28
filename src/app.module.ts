@@ -10,6 +10,7 @@ import { ProductModule } from './modules/product/product.module';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { AdminModule } from './modules/admin/admin.module';
     AdminModule,
     ProductModule,
     UserModule,
-    AuthModule
+    AuthModule,
+    ReviewsModule
   ],
   controllers: [AppController],
   providers: [AppService],

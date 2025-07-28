@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
 import shortUUID from "short-uuid";
+import { Cart } from "src/modules/carts/model/carts.model";
 
 
 export type UserDocument = User & Document & {
@@ -55,8 +56,14 @@ export class User extends Document {
   })
   role: string;
   
-  @Prop({})
-  wishList?: string[];
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Cart' }] })
+  carts: (Types.ObjectId | Cart)[]
+
+  @Prop({ default: false })
+  isVerified?: boolean
+
+  @Prop({ default: false })
+  isDeleted?: boolean
 
   @Prop({})
   otp: string;

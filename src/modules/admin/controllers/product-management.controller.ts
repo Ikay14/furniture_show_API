@@ -8,7 +8,7 @@ import { JwtAuthGuard } from "src/guards/jwt.guard";
 import { RolesGuard } from "../guards/admin.auth-guard";
 import { Roles } from "../guards/roles.guard";
 
-@Controller('admin/product-management')
+@Controller('admin-product-mgt')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin', 'super-admin')
 export class ProductManagementController {
@@ -17,7 +17,7 @@ export class ProductManagementController {
     ){}
 
 
-    @Post('creatze-product')
+    @Post('create-product')
     async createNewProduct(
         @Body() productDto: ProductDTO,
         @Req() req

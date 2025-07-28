@@ -21,7 +21,7 @@ export class ProductController {
       { key, value }
     )
   }  
-  
+        
    @Get(':id')
   async getProductById(@Param('id')id: string){
     return this.productService.getAProduct(id)

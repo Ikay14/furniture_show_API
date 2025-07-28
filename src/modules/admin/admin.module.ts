@@ -10,6 +10,10 @@ import { JwtService } from '@nestjs/jwt';
 import { ProductManagementService } from './services/product-management.service';
 import { ProductManagementController } from './controllers/product-management.controller';
 import { CloudinaryService } from 'src/services/cloudinary.service';
+import { OrderManagementController } from './controllers/order-management.controller';
+import { UserManagementController } from './controllers/user-management.controller';
+import { OrderManagementService } from './services/order.management.service';
+import { UserManagementService } from './services/user.management.service';
 
 @Module({
   imports: [
@@ -21,7 +25,7 @@ import { CloudinaryService } from 'src/services/cloudinary.service';
     ]),
    
   ],
-  controllers: [AdminController, ProductManagementController],
-  providers: [AdminService, JwtService, ProductManagementService, CloudinaryService],
+  controllers: [AdminController, ProductManagementController, OrderManagementController, UserManagementController],
+  providers: [AdminService, JwtService, ProductManagementService, OrderManagementService, UserManagementService, CloudinaryService],
 })
 export class AdminModule {}

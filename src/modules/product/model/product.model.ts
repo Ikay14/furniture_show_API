@@ -1,5 +1,5 @@
 import { SchemaFactory, Prop, Schema } from "@nestjs/mongoose";
-import { Document } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
 import shortUUID from "short-uuid";
 
 @Schema({ timestamps: true })
@@ -22,8 +22,12 @@ export class Product extends Document {
 
   @Prop({ required: true })
   description: string;
+  
+  
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Category' })
+  category: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true })  
   price: number;
 
   @Prop()
@@ -61,19 +65,17 @@ export class Product extends Document {
     weight?: string;
 
     @Prop()
-     material?: string;
+    material?: string;
 
     @Prop({ type: [String] })
     colorOptions?: string[];
 
-     @Prop()
-    brand?: string;
+    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Review', required: true })
+    reviews: Types.ObjectId;
 
     @Prop({ type: [String] })
     tags?: string[];
 
-    @Prop({ default: 0 })
-    rating: number;
 
     @Prop({ default: 0 })
     numReviews: number;
