@@ -18,6 +18,34 @@ export class AdminService {
     ) {}
 
 
+     async handleOAuthLogin(profileData: any, isAdmin: boolean) {
+    // Find or create admin user
+    let admin = await this.adminModel.findOne({ email: profileData.email })
+
+    if (!admin) {
+      admin = await this.adminModel.create({
+        email: profileData.email,
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        picture: profileData.picture,
+        provider: 'google',
+        role: isAdmin ? 'admin' : 'user', // 👈 Assign role conditionally
+        isVerified: true,
+      })
+    }
+
+    // Generate user app's own access token
+    const accessToken = await this.generateAccessToken(admin)
+
+    return {
+      msg: 'Login successful',
+      admin,
+      accessToken,
+    };
+  }
+
+
+
     async registerUser(registerDto: CreateAdminDto):Promise<{  
             msg: string;
             accessToken: string;
@@ -135,7 +163,7 @@ export class AdminService {
 
     private async generateAccessToken(admin: Admin){
             const payload = {
-                id: admin._ids,
+                id: admin._id,
                 email: admin.email,
                 roles: admin.roles,
             }

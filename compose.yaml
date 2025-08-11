@@ -1,0 +1,64 @@
+
+services:
+  furnitureshowroom:
+    image: furnitureshowroom
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 5050:5050
+    environment:
+      NODE_ENV: production
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      MONGO_URI: ${MONGO_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      CLOUDINARY_URL: ${CLOUDINARY_URL}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+       - ./src:/usr/src/app/src:ro
+       - ./package.json:/usr/src/app/package.json
+       - ./package-lock.json:/usr/src/app/package-lock.json
+       - backend-modules:/usr/src/app/node_modules
+
+    networks:
+        - public
+        - private
+    depends_on:
+      - redis
+      - db
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6371:6379
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+
+  db:
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/data/db
+
+    networks:
+      - private
+    command: mongod --auth 
+    restart: always 
+    
+networks:
+  public:
+  private:
+volumes:
+  backend-modules:
+  db_data:

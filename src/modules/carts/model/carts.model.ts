@@ -1,10 +1,20 @@
 import { SchemaFactory, Schema, Prop } from "@nestjs/mongoose";
-import mongoose, { Document, Types } from "mongoose";
+import { Document, Types } from "mongoose";
+import { v4 as uuidv4 } from 'uuid';
 
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, _id: false })
 export class Cart extends Document
  {
+
+  @Prop({
+      type: String,
+      default: uuidv4,
+      required: true,
+      unique: true
+    })
+   _id: string;
+
   @Prop({ ref: 'User', type: Types.ObjectId })
   user: Types.ObjectId;
 

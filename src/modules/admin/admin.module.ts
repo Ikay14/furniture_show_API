@@ -14,6 +14,7 @@ import { OrderManagementController } from './controllers/order-management.contro
 import { UserManagementController } from './controllers/user-management.controller';
 import { OrderManagementService } from './services/order.management.service';
 import { UserManagementService } from './services/user.management.service';
+import { GoogleStrategy } from 'src/stratgey/google.strategy';
 
 @Module({
   imports: [
@@ -26,6 +27,6 @@ import { UserManagementService } from './services/user.management.service';
    
   ],
   controllers: [AdminController, ProductManagementController, OrderManagementController, UserManagementController],
-  providers: [AdminService, JwtService, ProductManagementService, OrderManagementService, UserManagementService, CloudinaryService],
+  providers: [AdminService, JwtService, ProductManagementService, OrderManagementService, UserManagementService, CloudinaryService, GoogleStrategy],
 })
 export class AdminModule {}

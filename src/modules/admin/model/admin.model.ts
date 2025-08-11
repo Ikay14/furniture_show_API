@@ -1,7 +1,7 @@
 import { Document } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import shortUUID from "short-uuid";
-
+import { v4 as uuidv4 } from 'uuid';
 
 export enum Roles {
   ADMIN = 'admin',
@@ -22,7 +22,7 @@ export class Admin extends Document {
              index: true, 
              required: true 
             })
-        _ids = String;
+        _id = String;
 
     @Prop({
         required: true, 
@@ -38,7 +38,7 @@ export class Admin extends Document {
             enum: Object.values(Roles),
             default: [Roles.ADMIN]
         })
-        roles: string[];
+    roles: string[];
     
       @Prop({})
       otp: string;

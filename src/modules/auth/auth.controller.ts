@@ -1,7 +1,8 @@
-import { Controller, Body, Post, Res, Get, Req } from '@nestjs/common';
+import { Controller, Body, Post, Res, Get, Req, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { User } from '../user/model/user.model';
+import { AuthGuard } from '@nestjs/passport';
 import { RegisterDto } from '../user/DTO/register.user.dto';
 import { LoginDTO } from '../user/DTO/login.user.dto';
 import { ValidateDTO } from '../user/DTO/otp.validate.dto';
@@ -11,7 +12,17 @@ import { ValidateDTO } from '../user/DTO/otp.validate.dto';
 export class AuthController {
     constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
+    @Get('google')
+    @UseGuards(AuthGuard('google'))
+    googleLogin() {}
+
+    @Get('google/redirect')
+    @UseGuards(AuthGuard('google'))
+    async googleRedirect(@Req() req) {
+    return this.authService.handleOAuthLogin(req.user);
+    }
+
+    @Post('register')
     async registerUser(
      @Body() registerDto: RegisterDto,
      @Res({ passthrough: true }) res: Response,

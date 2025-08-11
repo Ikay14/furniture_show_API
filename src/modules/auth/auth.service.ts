@@ -19,6 +19,31 @@ export class AuthService {
     ) {}
 
 
+     async handleOAuthLogin(profileData: any) {
+    // Find or create user
+    let user = await this.userModel.findOne({ email: profileData.email })
+
+    if (!user) {
+      user = await this.userModel.create({
+        email: profileData.email,
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        picture: profileData.picture,
+        provider: 'google',
+      })
+    }
+
+    // Generate user app's own access token
+    const accessToken = await this.generateAccessToken(user)
+
+    return {
+      msg: 'Login successful',
+      user,
+      accessToken,
+    };
+  }
+
+
     async registerUser(registerDto: RegisterDto):Promise<{  
         msg: string;
         accessToken: string;
@@ -126,7 +151,7 @@ export class AuthService {
 
     private async generateAccessToken(user: User){
         const payload = {
-            id: user._ids,
+            id: user._id,
             email: user.email
         }
 

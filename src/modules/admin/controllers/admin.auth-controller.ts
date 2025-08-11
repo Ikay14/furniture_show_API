@@ -4,11 +4,24 @@ import { LoginDTO } from '../DTO/login.admin-dto';
 import { Response } from 'express';
 import { AdminService } from '../services/admin.auth-service';
 import { ValidateDTO } from 'src/modules/user/DTO/otp.validate.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { UseGuards, Get, Query } from '@nestjs/common';
 
 @Controller('admin')
-export class AdminController {
+export class AdminController { d
     constructor(private readonly adminService: AdminService) {}
 
+
+    @Get('google')
+    @UseGuards(AuthGuard('google'))
+    googleLogin() {}
+
+    @Get('google/redirect')
+    @UseGuards(AuthGuard('google'))
+    async googleRedirect(@Req() req, @Query('state') state: string) {
+    const isAdmin = state === 'admin'; // 👈 Capture the context
+    return this.adminService.handleOAuthLogin(req.user, isAdmin);
+    }
 
      @Post('register')
         async registerUser(

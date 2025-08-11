@@ -1,35 +1,23 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { Document, Types } from "mongoose";
-import shortUUID from "short-uuid";
+import { v4 as uuidv4 } from 'uuid';
 
 
 export type UserDocument = User & Document & {
   sanitize(): Partial<User>;
 };
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, _id: false })
 export class User extends Document {
   
-    @Prop({ 
+   @Prop({
         type: String,
-         default: () => shortUUID.generate(), 
-         unique: true, 
-         index: true, 
-         required: true 
-        })
-    _ids = String;
-
-    @Prop({
-      type: String,
-      required: true,           
-        unique: true,
-        index: true,
-        trim: true,
-        minlength: 3,  
-        maxlength: 30,
-    })
-    username: string;
-
+        default: uuidv4,
+        required: true,
+        unique: true
+      })
+     _id: string;
+     
     @Prop({ 
       type: String,
         required: true,
@@ -39,13 +27,21 @@ export class User extends Document {
     })
     email: string;
 
+    @Prop()
+    firstName?: string;
+
+    @Prop()
+    lastName?: string;
+
+    @Prop()
+    picture?: string;
+
     @Prop({
       type: String,
-        required: true,
         minlength: 6,
         select: false, // Exclude password from queries by default
     })
-    password: string;
+    password?: string;
 
   @Prop({
       type: String,
