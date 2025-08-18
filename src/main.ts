@@ -4,6 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { client, initializeDatabase,  } from './config/db.config';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { TransformInterceptor } from './common/global-Interceptor';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 import { ConfigService } from '@nestjs/config';
@@ -36,6 +37,17 @@ async function bootstrap() {
     process.exit(1);
   }
 
+    const config = new DocumentBuilder()
+    .setTitle('ShopFurYou API')
+    .setDescription('API documentation for ShopFurYou')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build()
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+
+
   app.use(cookieParser(process.env.COOKIE_SECRET));
 
   app.useGlobalPipes(new ValidationPipe({transform: true}))
@@ -52,7 +64,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.PORT || 3001
 
   await app.listen(port, '0.0.0.0')
   console.log(`Swagger is running at http://localhost:${port}/api/docs`);
@@ -61,6 +73,6 @@ async function bootstrap() {
 
 }
 bootstrap().catch((error) => {
-  console.error('Error during application bootstrap:', error);
+  console.error('Error during application bootstrap:', error)
   process.exit(1); 
 });
