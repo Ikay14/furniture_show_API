@@ -42,7 +42,6 @@ async function bootstrap() {
     .setDescription('API documentation for ShopFurYou')
     .setVersion('1.0')
     .addBearerAuth()
-    // 👇 Point Swagger to the deployed API base path
     .addServer(`${process.env.BASE_URL || 'http://localhost:3000'}/api/v1`)
     .build();
 
