@@ -21,7 +21,7 @@ RUN chown -R node /usr/src/app
 USER node
 
 # Expose app port
-EXPOSE 5050
+EXPOSE 3000
 
 # Start the compiled JS app
 CMD ["npm", "run", "start:prod"]

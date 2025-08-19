@@ -23,7 +23,7 @@ export class AdminController { d
     return this.adminService.handleOAuthLogin(req.user, isAdmin);
     }
 
-     @Post('register')
+    @Post('register')
         async registerUser(
          @Body() registerDto: CreateAdminDto,
          @Res({ passthrough: true }) res: Response,

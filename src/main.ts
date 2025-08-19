@@ -42,7 +42,10 @@ async function bootstrap() {
     .setDescription('API documentation for ShopFurYou')
     .setVersion('1.0')
     .addBearerAuth()
-    .build()
+    // 👇 Point Swagger to the deployed API base path
+    .addServer(`${process.env.BASE_URL || 'http://localhost:3000'}/api/v1`)
+    .build();
+
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
