@@ -21,6 +21,7 @@ export class CartsService {
     const { products } = createCartDto;
 
     const productIds = products.map(p => p.productId)
+   
 
     const foundProducts = await this.productModel.find({ _id: { $in: productIds } })
 
