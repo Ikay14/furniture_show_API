@@ -7,7 +7,9 @@ import { GenerateOTP } from 'src/utils/generate.otp';
 import { CreateAdminDto } from '../DTO/create-admin.dto';
 import { LoginDTO } from '../DTO/login.admin-dto';
 import * as bcrypt from 'bcrypt';
+import { MailService } from 'src/services/email.service';
 import { ValidateDTO } from 'src/modules/user/DTO/otp.validate.dto';
+
 
 
 @Injectable()
@@ -15,6 +17,7 @@ export class AdminService {
     constructor(
         @InjectModel(Admin.name) private readonly adminModel: Model<AdminDocument>,
         private jwtService: JwtService,
+        private mailService: MailService
     ) {}
 
 
@@ -57,12 +60,11 @@ export class AdminService {
             const admin = await this.adminModel.findOne({ email })
             if(admin) throw new BadRequestException(`Admin with ${email} exists, please proceed to login`)
 
-            const otp = GenerateOTP()
-
+            const verificationOtp = GenerateOTP()
 
             const hashPassword = await bcrypt.hash(password, 10)
-            const hashOTP = await bcrypt.hash(otp,10)
-            
+            const hashOTP = await bcrypt.hash(String(verificationOtp), 10)
+
             const otpExp = new Date(Date.now() + 10 * 60 * 1000)
 
             const newAdmin = await new this.adminModel({
@@ -72,11 +74,21 @@ export class AdminService {
                 otpExpires: otpExp
             })
 
-             const accessToken = await this.generateAccessToken(newAdmin)
+            await newAdmin.save()  
+
+            const accessToken = await this.generateAccessToken(newAdmin)
+
+            await this.sendEmail(
+                email, 
+                `Your Admin Account OTP`, 
+                'welcome', 
+                { verificationOtp }
+            )
+
             return {
                 msg: 'new admin created successfully',
                 accessToken,
-                admin: newAdmin.sanitize()
+                admin: newAdmin.sanitize() 
             }
         }
 
@@ -93,7 +105,7 @@ export class AdminService {
                 msg: 'admin login successful',
                 accessToken,
                 admin
-            };
+            }
         }
     
     
@@ -173,4 +185,9 @@ export class AdminService {
                 expiresIn: '10d'
             })
         }
+
+       // sendMail method
+        private async sendEmail(to: string, subject: string, templateName: string, data: Record<string, string>): Promise<void> {
+        await this.mailService.sendMailWithTemplate(to, subject, templateName, data);
+}
 }

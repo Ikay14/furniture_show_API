@@ -16,7 +16,7 @@ export class User extends Document {
         required: true,
         unique: true
       })
-     _id: string;
+     userId: string;
      
     @Prop({ 
       type: String,

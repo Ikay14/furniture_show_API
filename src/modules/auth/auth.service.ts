@@ -9,13 +9,15 @@ import { JwtService } from '@nestjs/jwt';
 import { GenerateOTP } from 'src/utils/generate.otp';
 import { LoginDTO } from '../user/DTO/login.user.dto';
 import { ValidateDTO } from '../user/DTO/otp.validate.dto';
+import { MailService } from 'src/services/email.service';
 
 @Injectable()
 export class AuthService {
     constructor (
         @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
         private configService: ConfigService,
-        private jwtService: JwtService
+        private jwtService: JwtService,
+        private mailService: MailService
     ) {}
 
 
@@ -55,12 +57,11 @@ export class AuthService {
         const user = await this.userModel.findOne({ email })
         if(user) throw new BadRequestException(`User with ${email} exists, please proceed to login`) 
 
-        const otp = GenerateOTP()    
-       
-        
-        const hashPassword = await bcrypt.hash(password, 10)
-        const hashOTP = await bcrypt.hash(otp,10)
-        
+        const otp = GenerateOTP();
+
+        const hashPassword = await bcrypt.hash(password, 10);
+        const hashOTP = await bcrypt.hash(String(otp), 10);
+
         const otpExp = new Date(Date.now() + 10 * 60 * 1000)
 
         const newUser = await new this.userModel({
@@ -70,7 +71,22 @@ export class AuthService {
             otpExpires: otpExp
         })
 
-         const accessToken = await this.generateAccessToken(newUser)
+        let savedUser;
+        try {
+            savedUser = await newUser.save()
+        } catch (error) {
+            throw new InternalServerErrorException(error)
+        }
+
+        const accessToken = await this.generateAccessToken(savedUser)
+
+        await this.sendEmail(
+            newUser.email, 
+            `Welcome to ShopForYou! Verify Your Email`, 
+            'welcome', 
+            { name: newUser.firstName || 'User', email: newUser.email, otp }
+        )
+        
         return {
             msg: 'new user created successfully',
             accessToken,
@@ -148,7 +164,7 @@ export class AuthService {
         };
     }
 
-
+   
     private async generateAccessToken(user: User){
         const payload = {
             id: user._id,
@@ -160,4 +176,11 @@ export class AuthService {
             expiresIn: '10d'
         })
     }
+
+
+         // sendMail method
+    private async sendEmail(to: string, subject: string, templateName: string, data: Record<string, string> ): Promise<void> {
+    await this.mailService.sendMailWithTemplate(to, subject, templateName, data);
+    }
+
 }

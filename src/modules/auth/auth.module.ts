@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../user/model/user.model';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleStrategy } from 'src/stratgey/google.strategy';
+import { MailService } from 'src/services/email.service';
 @Module({
   imports:[
 
@@ -12,7 +13,7 @@ import { GoogleStrategy } from 'src/stratgey/google.strategy';
       { name: User.name, schema: UserSchema }])
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtService, GoogleStrategy]
+  providers: [AuthService, JwtService, MailService, GoogleStrategy]
 })
 export class AuthModule {}
   

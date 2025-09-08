@@ -6,7 +6,7 @@ import * as fs from 'fs';
 @Injectable()
 export class MailService {
     private transporter = nodemailer.createTransport({
-      host: "jamfortetech.com",
+      host: "smtp.gmail.com",
       port: 465,
       secure: true,
       auth: {
@@ -24,14 +24,14 @@ export class MailService {
       return template;
     }
 
-    async sendMailWithTemplate(to: string, subject: string, templateName: string, data: Record<string, any>): Promise<void> {
+    async sendMailWithTemplate(to: string, subject: string, templateName: string, data: Record<string, string>): Promise<void> {
       const html = this.loadTemplate(templateName, data);
       await this.sendMail(to, subject, html);
     }
 
     async sendMail(to: string, subject: string, html?: string) {
       const mailOptions = {
-        from: 'Ikechukwu@jamfortetech.com',
+        from: 'shop4furyou@gmail.com',
         to,
         subject,
         html,

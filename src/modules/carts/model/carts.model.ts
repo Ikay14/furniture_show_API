@@ -13,7 +13,7 @@ export class Cart extends Document
       required: true,
       unique: true
     })
-   _id: string;
+   cartId: string;
 
   @Prop({ ref: 'User', type: Types.ObjectId })
   user: Types.ObjectId;

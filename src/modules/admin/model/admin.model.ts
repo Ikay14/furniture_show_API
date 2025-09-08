@@ -17,12 +17,12 @@ export class Admin extends Document {
 
     @Prop({ 
             type: String,
-             default: () => shortUUID.generate(), 
+            default: uuidv4, 
              unique: true, 
              index: true, 
              required: true 
             })
-        _id = String;
+        adminId = String;
 
     @Prop({
         required: true, 
@@ -68,5 +68,4 @@ AdminSchema.methods.sanitize = function () {
   delete obj.__v;
   delete obj.updatedAt;
   return obj;
-  
-};
+}

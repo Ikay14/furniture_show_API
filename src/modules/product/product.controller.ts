@@ -37,4 +37,19 @@ export class ProductController {
     async getProductById(@Param('id')id: string){
         return this.productService.getAProduct(id)
     }
+
+    @Get('category/:categoryId')
+    async getProductByCategory(
+      @Param('categoryId') categoryId: string ,
+      @Query('page') page: number = 1,
+      @Query('limit') limit: number = 10,
+
+    ) {
+        return this.productService.getProductByCategory(categoryId, page, limit)
+    }
+
+    @Get('category')
+    async getProductsByCategory() {
+      return this.productService.getCategories()
+    }
 }
