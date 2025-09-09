@@ -18,11 +18,10 @@ export class Product extends Document {
         type: String,
         index: true
      })
-    name: String;
+  name: String;
 
   @Prop({ required: true })
   description: string;
-  
   
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Category' })
   category: string;
@@ -76,7 +75,6 @@ export class Product extends Document {
     @Prop({ type: [String] })
     tags?: string[];
 
-
     @Prop({ default: 0 })
     numReviews: number;
 
@@ -86,8 +84,9 @@ export class Product extends Document {
     @Prop({ default: 'active' })
     status: 'active' | 'inactive' | 'draft';
 
-    @Prop()
-    createdBy?: string; // Admin user ID
+    @Prop({ type: String, ref: 'Vendor', required: true })
+    vendor: string; // Vendor UUID
+
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

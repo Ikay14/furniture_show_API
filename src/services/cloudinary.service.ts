@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { UploadApiResponse } from 'cloudinary';
-import toStream from 'buffer-to-stream'
+import * as toStream from 'buffer-to-stream';
 import { extractCloudinaryPublicId } from 'src/helpers/extract.cloudinary-url';
 import cloudinary from 'src/config/cloudinary.config';
 import { ConfigService } from '@nestjs/config';
+import { url } from 'inspector/promises';
+
 
 @Injectable()
 export class CloudinaryService {
@@ -40,7 +42,6 @@ export class CloudinaryService {
           resolve(result);
         },
       );
-
       toStream(file.buffer).pipe(uploadStream);
     });
   }
@@ -163,42 +164,15 @@ export class CloudinaryService {
    * @param url - The Cloudinary URL.
    * @returns string - The public ID.
    */
-  extractPublicId(url: string): string {
-    return extractCloudinaryPublicId(url);
+  async extractPublicId(url: string, folder: string): Promise<string> {
+    const parts = url.split('/');
+    const fileName = parts[parts.length - 1];
+    return `${folder}/${fileName.split('.')[0]}`;
   }
 
 
- async deleteImageFromUrl(imageUrl, folder = null) {
-    try {
-      if (!imageUrl || !imageUrl.includes("cloudinary.com")) {
-        throw new Error("Invalid Cloudinary URL provided");
-      }
-
-      // Extract public ID from URL
-      let publicId;
-      if (folder) {
-        // If folder is provided, include it in the public ID
-        const urlParts = imageUrl.split("/");
-        const folderIndex = urlParts.findIndex((part) => part === folder);
-        if (folderIndex !== -1 && folderIndex < urlParts.length - 1) {
-          const fileName = urlParts[urlParts.length - 1];
-          const fileNameWithoutExtension = fileName.split(".")[0];
-          publicId = `${folder}/${fileNameWithoutExtension}`;
-        }
-      }
-
-      if (!publicId) {
-        // Fallback method
-        const urlParts = imageUrl.split("/");
-        const fileName = urlParts[urlParts.length - 1];
-        publicId = fileName.split(".")[0];
-      }
-
-      return await this.deleteFile(publicId);
-    } catch (error) {
-      console.error("Error deleting image from URL:", error);
-      throw new Error(`Failed to delete image from URL: ${error.message}`);
-    }
+ async deleteImage(publicId: string): Promise<void> {
+    await cloudinary.uploader.destroy(publicId);
   }
 
   
@@ -238,7 +212,7 @@ export class CloudinaryService {
           try { 
             let result;  
             if (typeof id === "string" && id.includes("cloudinary.com")) {
-              result = await this.deleteImageFromUrl(id);
+              result = await this.deleteImage(id);
             } else {
               result = await this.deleteFile(id);
             }

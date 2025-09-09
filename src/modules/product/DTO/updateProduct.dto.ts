@@ -4,7 +4,7 @@ import { ProductDTO } from "./product.dto";
 
 export class UpdateDTO extends PartialType(ProductDTO){
     @IsString()
-    adminId: string
+    vendorId: string
 
     @IsString()
     productId: string

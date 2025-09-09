@@ -3,8 +3,8 @@ import { OrderManagementService } from "../services/order.management.service";
 import { OrderStatus } from "src/modules/orders/model/order.model";
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
-@ApiTags('Admin Orders Management')
-@Controller('admin-orders-mgt')
+@ApiTags('vendor Orders Management')
+@Controller('vendor-orders-mgt')
 export class OrderManagementController {
     constructor(
         private orderManagementService: OrderManagementService

@@ -14,5 +14,5 @@ import { MongooseModule } from '@nestjs/mongoose';
     ],
   providers: [PaymentService],
   controllers: [PaymentController]
-})
-export class PaymentModule {}
+}) 
+export class PaymentModule {}  

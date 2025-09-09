@@ -5,14 +5,14 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ProductImageDto } from "src/modules/product/DTO/product.image.dto";
 import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { JwtAuthGuard } from "src/guards/jwt.guard";
-import { RolesGuard } from "../guards/admin.auth-guard";
-import { Roles } from "../guards/roles.guard";
+import { RolesGuard } from "src/modules/admin/guards/admin.auth-guard";
+import { Roles } from "src/modules/admin/guards/roles.guard";
 import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 
-@ApiTags('Admin Product Management')
-@Controller('admin-product-mgt')
+@ApiTags('Vendor Product Management')
+@Controller('vendor-product-mgt')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'super-admin')
+@Roles('vendor')
 export class ProductManagementController {
     constructor(
         private productService: ProductManagementService,
@@ -44,21 +44,19 @@ export class ProductManagementController {
     @ApiOperation({ summary: 'Get all products with pagination and optional filtering' })
     @ApiQuery({ name: 'page', required: false, type: Number, example: 1, description: 'Page number for pagination' })
     @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Number of products per page' })
-    @ApiQuery({ name: 'key', required: false, type: String, example: 'name', description: 'Field to filter by' })
-    @ApiQuery({ name: 'value', required: false, type: String, example: 'Chair', description: 'Value to filter by' })
     @ApiResponse({ status: 200, description: 'Products fetched successfully' })
     async getAllProducts(
+        @Req() req: any,
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '10',
-        @Query('key') key: string = 'name', 
-        @Query('value') value: string = '', 
     ){
+        const vendorId = req.vendor?._id;
         const pageNum = Math.max(Number(page), 1);
         const limitNum = Math.max(Number(limit), 1);
 
-        return this.productService.getAllProducts(
-            { page: pageNum, limit: limitNum },
-            { key, value }
+        return this.productService.getAllVendorProducts(
+            vendorId,
+            { page: pageNum, limit: limitNum }
         );
     }
 

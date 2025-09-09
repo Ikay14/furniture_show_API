@@ -7,9 +7,9 @@ export class ProductImageDto {
     @IsString()
     productId: string;
 
-    @ApiProperty({ example: 'admin123', description: 'Admin ID' })
+    @ApiProperty({ example: 'vendor123', description: 'Vendor ID' })
     @IsString()
-    adminId: string;
+    vendorId: string;
 
     @ApiProperty({ example: ['image1.jpg', 'image2.jpg'], description: 'Array of image URLs or filenames', type: [String] })
     @IsString({ each: true })
