@@ -2,7 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsEmail, IsOptional, IsNotEmpty, MinLength } from 'class-validator';
 
 export class ApplyForVendorDto {
-  @ApiProperty({ example: 'SuperStore', description: 'Unique store name' })
+  @ApiProperty({ example: '1twhh-234erg-5678ee-90', description: 'Unique vendor ID' })
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+
   @IsString()
   @IsNotEmpty()
   storeName: string;
