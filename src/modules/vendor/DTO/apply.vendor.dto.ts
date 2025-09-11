@@ -11,10 +11,9 @@ export class ApplyForVendorDto {
   @IsNotEmpty()
   storeName: string;
 
-  @ApiProperty({ example: 'Jane Doe', description: 'Owner full name' })
-  @IsString()
-  @IsNotEmpty()
-  ownerName: string;
+  // @ApiProperty({ example: 'Jane Doe', description: 'Owner full name' })
+  // @IsNotEmpty()
+  // owner: object;
 
   @ApiProperty({ example: 'vendor@email.com', description: 'Vendor email' })
   @IsEmail()
@@ -71,18 +70,15 @@ export class ApplyForVendorDto {
   bankName: string;
 
   @ApiProperty({ example: 'https://logo.url', description: 'Store logo URL', required: false })
-  @IsString()
   @IsOptional()
   storeLogo?: string;
 
   @ApiProperty({ example: 'https://banner.url', description: 'Store banner URL', required: false })
-  @IsString()
   @IsOptional()
   bannerImage?: string;
 
   @ApiProperty({ example: 'Best store for furniture', description: 'Store description', required: false })
   @IsString()
-  @IsOptional()
   description?: string;
 
 }

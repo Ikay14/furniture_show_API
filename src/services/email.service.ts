@@ -24,7 +24,7 @@ export class MailService {
       return template;
     }
 
-    async sendMailWithTemplate(to: string, subject: string, templateName: string, data: Record<string, string>): Promise<void> {
+    async sendMailWithTemplate(to: string, subject: string, templateName: string, data: Record<string, any>): Promise<void> {
       const html = this.loadTemplate(templateName, data);
       await this.sendMail(to, subject, html);
     }

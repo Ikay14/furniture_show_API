@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { Document, Types } from "mongoose";
+import { Vendor } from "src/modules/vendor/model/vendor.model";
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -7,7 +8,7 @@ export type UserDocument = User & Document & {
   sanitize(): Partial<User>;
 };
 
-@Schema({ timestamps: true, _id: false })
+@Schema({ timestamps: true })
 export class User extends Document {
   
    @Prop({
@@ -35,6 +36,9 @@ export class User extends Document {
 
     @Prop()
     picture?: string;
+
+    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' })
+    vendor?: Vendor
 
     @Prop({
       type: String,

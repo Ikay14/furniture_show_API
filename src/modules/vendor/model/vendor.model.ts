@@ -1,6 +1,9 @@
 import mongoose, { Document, Types } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { v4 as uuidv4 } from 'uuid';
+import { User } from "src/modules/user/model/user.model";
+
+
 
 @Schema({ timestamps: true })
 export class Vendor {
@@ -15,9 +18,9 @@ export class Vendor {
 
         @Prop({required: true, unique: true}) 
         storeName: string
-
-        @Prop({}) 
-        ownerName: string
+        
+        @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+        owner: User; 
 
         @Prop({}) 
         email: String
@@ -93,9 +96,9 @@ export class Vendor {
 
         @Prop({})
         password: string
-    
-        @Prop({default: ['vendor']})
-        roles: string[]
+       
+        @Prop({ type: String, enum: ['vendor', 'user'], default: 'user' })
+        roles: string;
 
         @Prop({})
         otp: string;

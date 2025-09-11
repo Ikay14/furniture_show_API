@@ -1,8 +1,8 @@
-import { Controller, UseInterceptors, Post, UploadedFiles, Body } from '@nestjs/common';
+import { Controller, UseInterceptors, Post, UploadedFiles, Body, BadRequestException } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApplyForVendorDto } from '../DTO/apply.vendor.dto';
 import { UpdateApplyVendorDto } from '../DTO/updateapply.dto';
-import memoryStorage from 'multer';
+import { memoryStorage } from 'multer';
 import { ApplyForVendorService } from '../services/apply.vendor.service';
 import { ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -14,7 +14,7 @@ export class ApplyForVendorController {
     @Post('apply')
     @UseInterceptors(FileFieldsInterceptor([
         { name: 'storeLogo', maxCount: 1 },
-        { name: 'bannerLogo', maxCount: 1 }
+        { name: 'bannerImage', maxCount: 1 }
     ], {
         storage: memoryStorage()
     }))
@@ -25,18 +25,20 @@ export class ApplyForVendorController {
         @UploadedFiles() 
        files: {
          storeLogo: Express.Multer.File[],
-         bannerLogo: Express.Multer.File[]
+         bannerImage: Express.Multer.File[]
         },
+        
     ){
-        return this.applyForVendor.applyForVendor(applyDto, [
-            files.storeLogo?.[0], files.bannerLogo?.[0]
-        ])
+        return this.applyForVendor.applyForVendor(applyDto, 
+            files.storeLogo?.[0], 
+            files.bannerImage?.[0]
+        )
     }
 
     @Post('update-application')
     @UseInterceptors(FileFieldsInterceptor([
         { name: 'storeLogo', maxCount: 1 },
-        { name: 'bannerLogo', maxCount: 1 }
+        { name: 'bannerImage', maxCount: 1 }
     ], {
         storage: memoryStorage()
     }))
@@ -47,10 +49,11 @@ export class ApplyForVendorController {
         @UploadedFiles() 
        files: {
          storeLogo: Express.Multer.File[],
-         bannerLogo: Express.Multer.File[]
+         bannerImage: Express.Multer.File[]
         },
     ){
-        return this.applyForVendor.updateAppllication(updateDTO, [
-            files.storeLogo?.[0], files.bannerLogo?.[0] ])
+        return this.applyForVendor.updateAppllication(updateDTO,
+            files.storeLogo?.[0],
+            files.bannerImage?.[0] )
     }
 }

@@ -10,6 +10,7 @@ import { GenerateOTP } from 'src/utils/generate.otp';
 import { LoginDTO } from '../user/DTO/login.user.dto';
 import { ValidateDTO } from '../user/DTO/otp.validate.dto';
 import { MailService } from 'src/services/email.service';
+import { RequestOtpDto } from '../user/DTO/request.dto';
 
 @Injectable()
 export class AuthService {
@@ -26,13 +27,25 @@ export class AuthService {
     let user = await this.userModel.findOne({ email: profileData.email })
 
     if (!user) {
+        const otp = GenerateOTP();
+        const hashOTP = await bcrypt.hash(String(otp), 10);
+        const otpExp = new Date(Date.now() + 10 * 60 * 1000)    
       user = await this.userModel.create({
         email: profileData.email,
         firstName: profileData.firstName,
         lastName: profileData.lastName,
         picture: profileData.picture,
         provider: 'google',
+        otp: hashOTP,
+        otpExpires: otpExp
       })
+
+       await this.sendEmail(
+            user.email, 
+            `Welcome to ShopForYou! Verify Your Email`, 
+            'welcome', 
+            { name: user.firstName || 'User', email: user.email, otp }
+        )
     }
 
     // Generate user app's own access token
@@ -114,14 +127,13 @@ export class AuthService {
     async validateOTP(valOTPDto: ValidateDTO): Promise<{ msg: string }> {
         const { email, otp } = valOTPDto
         
-        try {
-                const user = await this.userModel.findOne({ email });
+        const user = await this.userModel.findOne({ email });
         if (!user) throw new BadRequestException(`User with ${email} not found`);
 
         const isOTPExpired = user.otpExpires < new Date();
         if (isOTPExpired) throw new BadRequestException(`OTP has expired, please request a new one`);
 
-        const isMatch = await bcrypt.compare(otp, user.otp);
+        const isMatch = await bcrypt.compare(String(otp), String(user.otp))
         if (!isMatch) throw new BadRequestException(`Invalid OTP`);
 
         // If OTP is valid, clear the OTP and its expiration
@@ -132,27 +144,38 @@ export class AuthService {
         return {
             msg: 'OTP validated successfully'
         };
-        } catch (error) {
-            throw new InternalServerErrorException(error)
-        }
+}   
+
+
+    async requestOTP(dto: RequestOtpDto): Promise<{ msg: string; otp: string }> {
+
+    const { email } = dto  
     
-    }
+    const user = await this.userModel.findOne({ email });
+    if (!user) throw new BadRequestException(`User with ${email} not found`);
 
+    const otp = GenerateOTP();
 
-    async requestOTP(email: string): Promise<{ msg: string; otp: string }> {
-        const user = await this.userModel.findOne({ email });
-        if (!user) throw new BadRequestException(`User with ${email} not found`);
+    user.otp = await bcrypt.hash(otp, 10);
 
-        const otp = GenerateOTP();
-        user.otp = await bcrypt.hash(otp, 10);
-        user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-        await user.save();
+    user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-        return {
-            msg: 'OTP sent successfully',
-            otp
-        };
-    }
+    await this.sendEmail(
+            user.email, 
+            `You requested a One-Time Password (OTP)`, 
+            'request.otp', 
+            { name: user.firstName || 'User', email: user.email, otp } 
+        )  
+
+    await user.save()
+
+    // 6. Return response with message and OTP
+    return {
+        msg: 'OTP sent successfully',
+        otp  
+    };
+}
+
 
     async refeshAccessToken(userId: string): Promise<{ msg: string, accessToken: string }> {
         const user = await this.userModel.findOne({ userId });
@@ -168,7 +191,8 @@ export class AuthService {
     private async generateAccessToken(user: User){
         const payload = {
             id: user._id,
-            email: user.email
+            email: user.email,
+            role: user.role
         }
 
         return this.jwtService.sign(payload, {

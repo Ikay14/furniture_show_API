@@ -5,7 +5,7 @@ import { extractCloudinaryPublicId } from 'src/helpers/extract.cloudinary-url';
 import cloudinary from 'src/config/cloudinary.config';
 import { ConfigService } from '@nestjs/config';
 import { url } from 'inspector/promises';
-
+import { Buffer } from 'buffer';
 
 @Injectable()
 export class CloudinaryService {
@@ -30,6 +30,15 @@ export class CloudinaryService {
     folder: string = 'uploads',
     resourceType: 'image' | 'auto' = 'auto'
   ): Promise<UploadApiResponse> {
+
+    if (!file) {
+    throw new Error('File is undefined — did you forget to send it?');
+  }
+  if (!file.buffer) {
+    console.error('File received but no buffer:', file);
+    throw new Error('File buffer missing — check Multer storage config');
+  }
+  
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {

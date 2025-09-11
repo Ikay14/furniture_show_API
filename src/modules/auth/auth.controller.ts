@@ -7,7 +7,7 @@ import { RegisterDto } from '../user/DTO/register.user.dto';
 import { LoginDTO } from '../user/DTO/login.user.dto';
 import { ValidateDTO } from '../user/DTO/otp.validate.dto';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
-
+import { RequestOtpDto } from '../user/DTO/request.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -97,9 +97,9 @@ export class AuthController {
     @ApiBody({ type: String, description: 'User email' })
     @ApiResponse({ status: 200, description: 'OTP requested successfully' })
     async requestOTP(
-        @Body() email: string
+        @Body() dto: RequestOtpDto
     ){
-        return this.authService.requestOTP(email)
+        return this.authService.requestOTP(dto)
     }
 
 
