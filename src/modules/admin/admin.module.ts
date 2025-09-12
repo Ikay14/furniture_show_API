@@ -15,6 +15,9 @@ import { UserManagementController } from './controllers/user-management.controll
 import { UserManagementService } from './services/user.management.service';
 import { GoogleStrategy } from 'src/stratgey/google.strategy';
 import { MailService } from 'src/services/email.service';
+import { VendorManagementCore } from './controllers/vendor.mgt';
+import { VendorManagementService } from './services/vendor.mgt';
+import { Vendor, VendorSchema } from '../vendor/model/vendor.model';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -23,9 +26,10 @@ import { MailService } from 'src/services/email.service';
       { name: Product.name, schema: ProductSchema },
       { name: Category.name, schema: CategorySchema },
       { name: Order.name, schema: OrderSchema },
+      { name: Vendor.name, schema: VendorSchema },
     ]),
   ],
-  controllers: [AdminController, CategoryController, UserManagementController],
-  providers: [AdminService, JwtService, MailService, CategoryService, UserManagementService, CloudinaryService, GoogleStrategy],
+  controllers: [AdminController, CategoryController, UserManagementController, VendorManagementCore],
+  providers: [AdminService, JwtService, MailService, CategoryService, UserManagementService, CloudinaryService, GoogleStrategy, VendorManagementService],
 })
 export class AdminModule {}

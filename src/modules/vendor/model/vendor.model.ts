@@ -98,13 +98,7 @@ export class Vendor {
         password: string
        
         @Prop({ type: String, enum: ['vendor', 'user'], default: 'user' })
-        roles: string;
-
-        @Prop({})
-        otp: string;
-    
-        @Prop({})
-        otpExpires: Date;    
+        roles: string;  
 
         @Prop({}) 
         isVerified: boolean
