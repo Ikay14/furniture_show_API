@@ -15,8 +15,8 @@ import { UserManagementController } from './controllers/user-management.controll
 import { UserManagementService } from './services/user.management.service';
 import { GoogleStrategy } from 'src/stratgey/google.strategy';
 import { MailService } from 'src/services/email.service';
-import { VendorManagementCore } from './controllers/vendor.mgt';
-import { VendorManagementService } from './services/vendor.mgt';
+import { VendorManagementCore } from './controllers/vendor.mgt.controller';
+import { VendorManagementService } from './services/vendor.mgt.service';
 import { Vendor, VendorSchema } from '../vendor/model/vendor.model';
 @Module({
   imports: [

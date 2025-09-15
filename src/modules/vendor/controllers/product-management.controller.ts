@@ -6,8 +6,9 @@ import { ProductImageDto } from "src/modules/product/DTO/product.image.dto";
 import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { JwtAuthGuard } from "src/guards/jwt.guard";
 import { RolesGuard } from "src/modules/admin/guards/admin.auth-guard";
-import { Roles } from "src/modules/admin/guards/roles.guard";
+import { Roles } from "src/decorators/roles.decorator";
 import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { GetUser } from 'src/modules/decorators/roles.decorator'
 
 @ApiTags('Vendor Product Management')
 @Controller('vendor-product-mgt')
@@ -22,12 +23,12 @@ export class ProductManagementController {
     @ApiOperation({ summary: 'Create a new product' })
     @ApiBody({ type: ProductDTO })
     @ApiResponse({ status: 201, description: 'Product created successfully' })
+    @
     async createNewProduct(
         @Body() productDto: ProductDTO,
-        @Req() req
+        @GetUser('vendorId') vendorId: string
     ) {
-        const adminId = req.admin._id
-        return this.productService.createNewproduct(productDto, adminId)
+        return this.productService.createNewproduct(productDto, vendorId)
     }
 
     @Patch('/:id/images')
@@ -46,7 +47,7 @@ export class ProductManagementController {
     @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Number of products per page' })
     @ApiResponse({ status: 200, description: 'Products fetched successfully' })
     async getAllProducts(
-        @Req() req: any,
+        @GetUser('vendorId') vendorId: string,
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '10',
     ){
@@ -82,8 +83,9 @@ export class ProductManagementController {
     @ApiOperation({ summary: 'Delete a product by its ID' })
     @ApiParam({ name: 'id', type: String, description: 'Product ID' })
     @ApiResponse({ status: 200, description: 'Product deleted successfully' })
-    async deleteProduct(@Param('id') id: string, @Req() req: any,){
-        const adminId = req.admin._id
+    async deleteProduct(
+        @Param('id') id: string,
+        @GetUser('vendorId') vendorId: string,){
         return this.productService.deleteProduct(id, adminId)
     }
 }

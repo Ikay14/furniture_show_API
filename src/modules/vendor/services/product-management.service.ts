@@ -18,10 +18,10 @@ export class ProductManagementService {
         private cloudinaryService: CloudinaryService
     ) {}
 
-    async createNewproduct(productDto: ProductDTO, adminId: { _id: string }): Promise<{ msg: string; newProduct: Product }> {
+    async createNewproduct(productDto: ProductDTO, vendorId: string ): Promise<{ msg: string; newProduct: Product }> {
         const { name, description_of_product, price, stock, dimensions } = productDto
 
-        const isVendorId =  await this.vendorModel.findOne({ adminId })
+        const isVendorId =  await this.vendorModel.findOne({ vendorId })
         if(!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
 
         const product = await this.productModel.findOne({name})

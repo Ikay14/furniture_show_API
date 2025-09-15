@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core/services/reflector.service";
-import { Observable } from "rxjs";
+
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -24,3 +24,4 @@ export class RolesGuard implements CanActivate {
         return true;
     }
 }
+
