@@ -21,8 +21,8 @@ export class ProductManagementService {
     async createNewproduct(productDto: ProductDTO, vendorId: string ): Promise<{ msg: string; newProduct: Product }> {
         const { name, description_of_product, price, stock, dimensions } = productDto
 
-        const isVendorId =  await this.vendorModel.findOne({ vendorId })
-        if(!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
+        // const isVendorId =  await this.vendorModel.findOne({ vendorId })
+        // if(!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
 
         const product = await this.productModel.findOne({name})
         if (product) throw new BadRequestException('Product already exists')
@@ -33,7 +33,7 @@ export class ProductManagementService {
             price,
             stock,
             dimensions,
-            createdBy : adminId._id,
+            createdBy : vendorId,
         })
 
         await newProduct.save();
@@ -47,11 +47,12 @@ export class ProductManagementService {
 
 
  async uploadProductImage(productImage: ProductImageDto) {
-    const { vendorId, productId, file } = productImage;
-    if (!vendorId || !productId || !file) throw new BadRequestException('Missing required fields: vendorId, productId, or file')
+    const { productId, file } = productImage;
 
-    const isVendor = await this.vendorModel.findOne({ vendorId });
-    if (!isVendor) throw new UnauthorizedException('Unauthorized action. Vendor access required.')
+    if (!productId || !file) throw new BadRequestException('Missing required fields: vendorId, productId, or file')
+
+    // const isVendor = await this.vendorModel.findOne({ vendorId });
+    // if (!isVendor) throw new UnauthorizedException('Unauthorized action. Vendor access required.')
 
     const folder = `products/${productId}`
 
@@ -123,10 +124,10 @@ export class ProductManagementService {
 
 
 async updateProduct(updateProductDto: UpdateDTO){
-    const { vendorId, productId } = updateProductDto
+    const { productId } = updateProductDto
 
-    const isVendorId =  await this.vendorModel.findOne({ vendorId })
-    if(!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
+    // const isVendorId =  await this.vendorModel.findOne({ vendorId })
+    // if(!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
 
     const product = await this.productModel.findOneAndUpdate(
         { productId },
@@ -144,7 +145,7 @@ async updateProduct(updateProductDto: UpdateDTO){
     }
 }  
 
-async deleteProduct(productId: string, vendorId: { _id: string }): Promise<{ msg: string; deletedProduct: Product }> {
+async deleteProduct(productId: string, vendorId: string ): Promise<{ msg: string; deletedProduct: Product }> {
     const isVendorId = await this.vendorModel.findOne({ vendorId })
     if (!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
 

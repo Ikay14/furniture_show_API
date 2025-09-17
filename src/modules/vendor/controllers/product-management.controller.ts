@@ -5,14 +5,14 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { ProductImageDto } from "src/modules/product/DTO/product.image.dto";
 import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { JwtAuthGuard } from "src/guards/jwt.guard";
-import { RolesGuard } from "src/modules/admin/guards/admin.auth-guard";
 import { Roles } from "src/decorators/roles.decorator";
+import { RolesGuard } from "src/guards/roles.guard";
 import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
-import { GetUser } from 'src/modules/decorators/roles.decorator'
+import { GetUser } from "src/decorators/user.decorator";
 
 @ApiTags('Vendor Product Management')
 @Controller('vendor-product-mgt')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 @Roles('vendor')
 export class ProductManagementController {
     constructor(
@@ -23,7 +23,6 @@ export class ProductManagementController {
     @ApiOperation({ summary: 'Create a new product' })
     @ApiBody({ type: ProductDTO })
     @ApiResponse({ status: 201, description: 'Product created successfully' })
-    @
     async createNewProduct(
         @Body() productDto: ProductDTO,
         @GetUser('vendorId') vendorId: string
@@ -51,7 +50,6 @@ export class ProductManagementController {
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '10',
     ){
-        const vendorId = req.vendor?._id;
         const pageNum = Math.max(Number(page), 1);
         const limitNum = Math.max(Number(limit), 1);
 
@@ -86,6 +84,6 @@ export class ProductManagementController {
     async deleteProduct(
         @Param('id') id: string,
         @GetUser('vendorId') vendorId: string,){
-        return this.productService.deleteProduct(id, adminId)
+        return this.productService.deleteProduct(id, vendorId)
     }
 }

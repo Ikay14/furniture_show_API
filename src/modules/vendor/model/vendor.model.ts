@@ -100,12 +100,12 @@ export class Vendor {
         @Prop({ type: String, enum: ['vendor', 'user'], default: 'user' })
         roles: string;  
 
-        @Prop({}) 
+        @Prop({ default: false}) 
         isVerified: boolean
 
         isActive: boolean
 
-        @Prop({}) 
+        @Prop({ default: false }) 
         isSuspended: boolean
  
         @Prop({}) 

@@ -1,13 +1,16 @@
-import { Controller, UseInterceptors, Post, UploadedFiles, Body, BadRequestException } from '@nestjs/common';
+import { Controller, UseInterceptors, Post, UploadedFiles, Body, BadRequestException, UseGuards } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApplyForVendorDto } from '../DTO/apply.vendor.dto';
 import { UpdateApplyVendorDto } from '../DTO/updateapply.dto';
 import { memoryStorage } from 'multer';
 import { ApplyForVendorService } from '../services/apply.vendor.service';
 import { ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/guards/jwt.guard';
+import { RolesGuard } from 'src/guards/roles.guard';
 
 @ApiTags('Vendor')
 @Controller('vendor')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ApplyForVendorController {
     constructor(private applyForVendor: ApplyForVendorService){}
 

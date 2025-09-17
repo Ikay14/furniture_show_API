@@ -10,8 +10,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => req?.cookies?.['jwt']
+        (req: Request) => req?.cookies?.['auth-token']
       ]),
+      
+      ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET') 
     });
   }
@@ -19,7 +21,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     return { 
         userId: payload.sub, 
-        email: payload.email
+        email: payload.email,
+        role: payload.role
     };
   }
 }

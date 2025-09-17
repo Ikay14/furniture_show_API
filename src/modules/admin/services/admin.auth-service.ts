@@ -5,8 +5,8 @@ import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { GenerateOTP } from 'src/utils/generate.otp';
 import { CreateAdminDto } from '../DTO/create-admin.dto';
-import { LoginDTO } from '../DTO/login.admin-dto';
 import * as bcrypt from 'bcrypt';
+import { LoginDTO } from 'src/modules/user/DTO/login.user.dto';
 import { MailService } from 'src/services/email.service';
 import { ValidateDTO } from 'src/modules/user/DTO/otp.validate.dto';
 
@@ -32,7 +32,7 @@ export class AdminService {
         lastName: profileData.lastName,
         picture: profileData.picture,
         provider: 'google',
-        role: isAdmin ? 'admin' : 'user', // 👈 Assign role conditionally
+        role: isAdmin ? 'admin' : 'user', //
         isVerified: true,
       })
     }
@@ -46,8 +46,6 @@ export class AdminService {
       accessToken,
     };
   }
-
-
 
     async registerUser(registerDto: CreateAdminDto):Promise<{  
             msg: string;
@@ -101,6 +99,7 @@ export class AdminService {
             if (!isMatch) throw new BadRequestException(`Invalid credentials`);
 
             const accessToken = await this.generateAccessToken(admin);
+            
             return {
                 msg: 'admin login successful',
                 accessToken,
@@ -113,7 +112,7 @@ export class AdminService {
             const { email, otp } = valOTPDto
             
             try {
-                    const admin = await this.adminModel.findOne({ email });
+            const admin = await this.adminModel.findOne({ email });
             if (!admin) throw new BadRequestException(`Admin with ${email} not found`);
 
             const isOTPExpired = admin.otpExpires < new Date();

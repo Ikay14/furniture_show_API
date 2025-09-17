@@ -1,6 +1,6 @@
 import { Body, Controller, Post, Req, Res, UseGuards, Get, Query } from '@nestjs/common';
 import { CreateAdminDto } from '../DTO/create-admin.dto';
-import { LoginDTO } from '../DTO/login.admin-dto';
+import { LoginDTO } from 'src/modules/user/DTO/login.user.dto';
 import { Response } from 'express';
 import { AdminService } from '../services/admin.auth-service';
 import { ValidateDTO } from 'src/modules/user/DTO/otp.validate.dto';
