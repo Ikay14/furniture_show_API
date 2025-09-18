@@ -11,8 +11,7 @@ import { Product, ProductSchema } from '../product/model/product.model';
 import { CloudinaryService } from 'src/services/cloudinary.service';
 import { Order, OrderSchema } from '../orders/model/order.model';
 import { User, UserSchema } from '../user/model/user.model';
-import { JwtService } from '@nestjs/jwt';
-
+import { AuthModule } from '../auth/auth.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -20,9 +19,10 @@ import { JwtService } from '@nestjs/jwt';
       { name: Product.name, schema: ProductSchema },
       { name: Order.name, schema: OrderSchema },
       { name: User.name, schema: UserSchema },
-    ])
+    ]),
+    AuthModule
   ],
   controllers: [ProductManagementController, OrderManagementController, ApplyForVendorController],
-  providers: [ProductManagementService, OrderManagementService, ApplyForVendorService, CloudinaryService, JwtService]
+  providers: [ProductManagementService, OrderManagementService, ApplyForVendorService, CloudinaryService]
 })
 export class VendorModule {}

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import { Vendor } from "src/modules/vendor/model/vendor.model";
+import { Roles, Vendor, VendorStatus } from "src/modules/vendor/model/vendor.model";
 import { Admin } from "../model/admin.model";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
@@ -7,9 +7,11 @@ import Redis from "ioredis";
 import { InjectRedis } from "@nestjs-modules/ioredis";
 import { CACHE_TTL } from "src/config/db.config";
 import { DeclineVendorDto } from "../DTO/decline.dto";
+import { Logger } from "@nestjs/common";
 
 @Injectable()
 export class VendorManagementService {
+    private readonly logger = new Logger(VendorManagementService.name);
     constructor(
         // @InjectModel(Admin.name) private adminModel: Model<Admin>, 
         @InjectModel(Vendor.name) private vendorModel: Model<Vendor>,
@@ -43,31 +45,54 @@ export class VendorManagementService {
         }    
     }
 
-    async approveVendorApplication(vendorId: string){
+    async approveVendorApplication(vendorId: string, adminUser : { id: string; email?: string }){
 
-         const application = await this.vendorModel.findOne({ vendorId })
-        if(!application) throw new NotFoundException(`vendor application with ${vendorId} not found`)
+        if(!vendorId) throw new BadRequestException('vendor is required')
+
+        const filter = { vendorId, status: VendorStatus.PENDING}   
+        
+        const update = {
+            $set: {
+                status: VendorStatus.APPROVED,
+                isVerified: true,
+                roles: Roles.VENDOR,
+                approvedAt: new Date(),
+                approvedBy: adminUser?.id || null
+            }
+        }
+
+        const updatedApp = await this.vendorModel.findOneAndUpdate(filter, update, { new: true  }).lean
 
         // call function to verify Documents like NIN
 
-        application.isVerified = true
+        if (!updatedApp) {
+         // Either not found or not in pending state
+        const existing = await this.vendorModel.findOne({ vendorId }).lean();
+        if (!existing) throw new NotFoundException(`Vendor application ${vendorId} not found`);
+        // if exists but not pending
+        throw new BadRequestException(`Cannot approve: application is ${existing.status}`);
+    }
+        try {
+        // clear cache explicitly
+        const keysToDelete = [`vendor:application:${vendorId}`,]
+        if (keysToDelete.length) await this.redisCache.del(...keysToDelete);
 
-        await application.save();
-        // Invalidate cache
-        await this.redisCache.del(`vendor:application:${vendorId}`);
-        await this.redisCache.del(`vendor:applications:status:${application.isVerified}*`); // pattern delete
-
+    } catch (err) {
+        // log the cache error but do not fail the approval: cache is an optimization
+        this.logger.warn(`Cache invalidation failed for vendor ${vendorId}: ${err.message}`)
+        
+    }
+        const safeApp = { ...updatedApp }
 
         return {
             msg: 'application updated successfully',
-            application
+            safeApp
         }
     }
 
     async getAllVendorApplications(
         page: number, limit: number , status: string
     ){
-
 
         const cacheKey = `vendor:applications:status:${status}:page:${page}:limit:${limit}`;
 
@@ -86,6 +111,7 @@ export class VendorManagementService {
                 storeName: application.storeName,
                 description: application.description,
                 isVerified: application.isVerified,
+                status: application.status
             }))
 
 
@@ -106,35 +132,43 @@ export class VendorManagementService {
     async declineVendorApplication(vendorId: string, declineDto: DeclineVendorDto) {
         const { reason, adminId } = declineDto;
 
-        if (!vendorId) {
-        throw new BadRequestException('Invalid vendorId');
-    }
-        if (!reason?.trim()) {
-        throw new BadRequestException('Decline reason is required');
-    }
+        if (!vendorId) throw new BadRequestException('Invalid vendorId')
+    
+        if (!reason?.trim()) throw new BadRequestException('Decline reason is required')
 
-        const updatedApp = await this.vendorModel.findOneAndUpdate(
-            { vendorId },
-            {
+        const filter = { vendorId, status: VendorStatus.PENDING }
+        
+        const declineData = {
+            $set: {
                 reason,
-                isVerified: false,
-                declinedAt: new Date(),
-                declinedBy: adminId,
-            },
-                { new: true }
-        );
-
-        if (!updatedApp) {
-            throw new NotFoundException(`Vendor application ${vendorId} not found`);
+                status: VendorStatus.DECLINED,
+                declinedBy: adminId || null,
+            }
         }
 
-        await this.redisCache.del(`vendor:${vendorId}`);
+        const declineApp = await this.vendorModel.findOneAndUpdate(filter, declineData, { new: true } ).lean()   
+        if (!declineApp) {
+       
+        const existing = await this.vendorModel.findOne({ vendorId }).lean();
+        if (!existing) throw new NotFoundException(`Vendor application ${vendorId} not found`);
+        throw new BadRequestException(`Cannot decline: application is ${existing.status}`);
+        } 
+
+        await this.redisCache.del(`vendor:application:${vendorId}`);
+
+         this.logger.warn(`Vendor ${vendorId} declined by admin ${adminId}. Reason: ${reason}`)
 
         return {
-            success: true,
-            message: `Vendor application ${vendorId} declined`,
-            data: updatedApp,
-        };
-}
+                success: true,
+                message: `Vendor ${vendorId} declined`,
+                data: {
+                vendorId: declineApp.vendorId,
+                status: declineApp.status,
+                reason: declineApp.reason,
+                declinedBy: declineApp.declinedBy,
+        },
+    };
+
+    }
 
 }

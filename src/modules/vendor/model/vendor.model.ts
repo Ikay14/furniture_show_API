@@ -2,7 +2,20 @@ import mongoose, { Document, Types } from "mongoose";
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import { User } from "src/modules/user/model/user.model";
+import { Admin } from "src/modules/admin/model/admin.model";
 
+
+export const VendorStatus = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  DECLINED: 'declined',
+} as const;
+
+export const Roles = {
+  USER: 'user',
+  VENDOR: 'vendor',
+  ADMIN: 'admin',
+} as const;
 
 
 @Schema({ timestamps: true })
@@ -11,12 +24,11 @@ export class Vendor {
         type: String,
         default: uuidv4, 
         unique: true, 
-        index: true, 
         required: true 
          })
         vendorId = String;
 
-        @Prop({required: true, unique: true}) 
+        @Prop({ required: true, unique: true }) 
         storeName: string
         
         @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
@@ -96,13 +108,37 @@ export class Vendor {
 
         @Prop({})
         password: string
+
+        @Prop()
+        reason: string
+
+        @Prop({})
+        approvedAt: Date
+
+        @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true })
+        approvedBy: Admin
+
+        @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true })
+        declinedBy: Admin
        
-        @Prop({ type: String, enum: ['vendor', 'user'], default: 'user' })
-        roles: string;  
+        @Prop({
+            type: [String],
+            enum: Object.values(Roles),
+            default: [Roles.USER]
+        })
+        roles: string[];
 
         @Prop({ default: false}) 
         isVerified: boolean
 
+        @Prop({
+                type: [String],
+                enum: Object.values(VendorStatus),
+                default: [VendorStatus.PENDING]
+                })
+        status: string[];
+
+        @Prop({ default: true }) 
         isActive: boolean
 
         @Prop({ default: false }) 

@@ -58,10 +58,10 @@ export class AdminService {
             const admin = await this.adminModel.findOne({ email })
             if(admin) throw new BadRequestException(`Admin with ${email} exists, please proceed to login`)
 
-            const verificationOtp = GenerateOTP()
+            const otp = GenerateOTP()
 
             const hashPassword = await bcrypt.hash(password, 10)
-            const hashOTP = await bcrypt.hash(String(verificationOtp), 10)
+            const hashOTP = await bcrypt.hash(String(otp), 10)
 
             const otpExp = new Date(Date.now() + 10 * 60 * 1000)
 
@@ -80,7 +80,7 @@ export class AdminService {
                 email, 
                 `Your Admin Account OTP`, 
                 'welcome', 
-                { verificationOtp }
+                { otp }
             )
 
             return {
@@ -105,7 +105,7 @@ export class AdminService {
                 accessToken,
                 admin
             }
-        }
+        } 
     
     
         async validateOTP(valOTPDto: ValidateDTO): Promise<{ msg: string }> {
@@ -171,7 +171,7 @@ export class AdminService {
             msg: 'Admin promoted to super-admin successfully'
         };
     }
-
+  
     private async generateAccessToken(admin: Admin){
             const payload = {
                 id: admin._id,
@@ -181,7 +181,7 @@ export class AdminService {
     
             return this.jwtService.sign(payload, {
                 secret: process.env.JWT_SECRET,
-                expiresIn: '10d'
+                expiresIn: process.env.JWT_EXPIRES_IN
             })
         }
 

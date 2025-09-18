@@ -7,10 +7,12 @@ import { ApplyForVendorService } from '../services/apply.vendor.service';
 import { ApiBody, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/guards/jwt.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
+import { Roles } from 'src/decorators/roles.decorator';
 
 @ApiTags('Vendor')
 @Controller('vendor')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('user')
 export class ApplyForVendorController {
     constructor(private applyForVendor: ApplyForVendorService){}
 

@@ -21,8 +21,11 @@ export class VendorManagementController {
   }
 
   @Patch('application/approve/:vendorId')
-  async approveVendorApplication(@Param('vendorId') vendorId: string) {
-    return this.vendorService.approveVendorApplication(vendorId);
+  async approveVendorApplication(
+    @Param('vendorId') vendorId: string,
+    @GetUser() adminUser: any
+) {
+    return this.vendorService.approveVendorApplication(vendorId, adminUser);
   }
 
   @Get('applications')
