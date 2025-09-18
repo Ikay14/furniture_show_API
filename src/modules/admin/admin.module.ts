@@ -20,6 +20,9 @@ import { VendorManagementService } from './services/vendor.mgt.service';
 import { Vendor, VendorSchema } from '../vendor/model/vendor.model';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { JwtModule } from '@nestjs/jwt';
+import { Notification, NotificationSchema } from '../notification/model/notification.model';
+import { VendorModule } from '../vendor/vendor.module';
+import { NotificationService } from '../notification/notifcation.service';
 
 @Module({
   imports: [
@@ -30,6 +33,7 @@ import { JwtModule } from '@nestjs/jwt';
       { name: Category.name, schema: CategorySchema },
       { name: Order.name, schema: OrderSchema },
       { name: Vendor.name, schema: VendorSchema },
+      { name: Notification.name, schema: NotificationSchema },
     ]),
    RedisModule.forRoot({
       type: 'single',
@@ -45,6 +49,6 @@ import { JwtModule } from '@nestjs/jwt';
     }),
   ],
   controllers: [AdminController, CategoryController, UserManagementController, VendorManagementController],
-  providers: [AdminService, JwtStrategy, MailService, CategoryService, UserManagementService, CloudinaryService, GoogleStrategy, VendorManagementService],
+  providers: [AdminService, JwtStrategy, MailService, CategoryService, UserManagementService, CloudinaryService, GoogleStrategy,        VendorManagementService, NotificationService, VendorModule ],
 })
 export class AdminModule {}

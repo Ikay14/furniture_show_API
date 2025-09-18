@@ -15,7 +15,7 @@ import { CartsModule } from './modules/carts/carts.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { VendorModule } from './modules/vendor/vendor.module';
-
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -23,6 +23,7 @@ import { VendorModule } from './modules/vendor/vendor.module';
       isGlobal: true,
       load : [serverConfig],
     }),
+    ScheduleModule.forRoot(),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService : ConfigService) =>({

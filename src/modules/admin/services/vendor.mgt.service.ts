@@ -8,6 +8,8 @@ import { InjectRedis } from "@nestjs-modules/ioredis";
 import { CACHE_TTL } from "src/config/db.config";
 import { DeclineVendorDto } from "../DTO/decline.dto";
 import { Logger } from "@nestjs/common";
+import { NotificationService } from "src/modules/notification/notifcation.service"; 
+import { NotificationType } from "src/modules/notification/model/notification.model";
 
 @Injectable()
 export class VendorManagementService {
@@ -15,7 +17,8 @@ export class VendorManagementService {
     constructor(
         // @InjectModel(Admin.name) private adminModel: Model<Admin>, 
         @InjectModel(Vendor.name) private vendorModel: Model<Vendor>,
-        @InjectRedis() private redisCache: Redis
+        @InjectRedis() private redisCache: Redis,
+        private notificationService: NotificationService
 
     ){}
 
@@ -82,6 +85,13 @@ export class VendorManagementService {
         this.logger.warn(`Cache invalidation failed for vendor ${vendorId}: ${err.message}`)
         
     }
+
+        await this.notificationService.createNotification({
+            recipient: vendorId,
+            notificationType: NotificationType.VENDOR_APPROVED,
+            message: 'Your vendor application has been approved'
+    });
+
         const safeApp = { ...updatedApp }
 
         return {

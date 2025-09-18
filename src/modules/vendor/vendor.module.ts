@@ -23,6 +23,7 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule
   ],
   controllers: [ProductManagementController, OrderManagementController, ApplyForVendorController],
-  providers: [ProductManagementService, OrderManagementService, ApplyForVendorService, CloudinaryService]
+  providers: [ProductManagementService, OrderManagementService, ApplyForVendorService, CloudinaryService],
+  exports: [VendorModule]
 })
 export class VendorModule {}

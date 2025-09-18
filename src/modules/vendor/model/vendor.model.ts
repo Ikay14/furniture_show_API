@@ -9,13 +9,13 @@ export const VendorStatus = {
   PENDING: 'pending',
   APPROVED: 'approved',
   DECLINED: 'declined',
-} as const;
+} 
 
 export const Roles = {
   USER: 'user',
   VENDOR: 'vendor',
   ADMIN: 'admin',
-} as const;
+} 
 
 
 @Schema({ timestamps: true })
@@ -35,7 +35,7 @@ export class Vendor {
         owner: User; 
 
         @Prop({}) 
-        email: String
+        email: string
 
         @Prop({}) 
         phone: number
@@ -126,7 +126,7 @@ export class Vendor {
             enum: Object.values(Roles),
             default: [Roles.USER]
         })
-        roles: string[];
+        roles: string
 
         @Prop({ default: false}) 
         isVerified: boolean
@@ -136,7 +136,7 @@ export class Vendor {
                 enum: Object.values(VendorStatus),
                 default: [VendorStatus.PENDING]
                 })
-        status: string[];
+        status: string
 
         @Prop({ default: true }) 
         isActive: boolean
