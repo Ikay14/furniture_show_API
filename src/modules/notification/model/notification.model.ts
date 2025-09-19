@@ -6,7 +6,7 @@ export enum NotificationType {
     NEW_PRODUCT_ADDED = 'NEW_PRODUCT_ADDED',
     SYSTEM_ALERT = 'SYSTEM_ALERT',
     OTHER = 'OTHER'
-}   
+} 
 
 @Schema({ timestamps: true })
 export class Notification{

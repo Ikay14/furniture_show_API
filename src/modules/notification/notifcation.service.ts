@@ -21,22 +21,25 @@ export class NotificationService {
     ){}
 
     async createNotification(notifyDto: NotificationDTO){
-        const { recipient, message, notificationType } = notifyDto
+        const { recipientId, message, recipientType, notificationType } = notifyDto
+
+        const recipient = await this.getRecipient({recipientId, recipientType})
 
         const notifyUser = await this.notifyModel.create({
-            recipient, message, notificationType
+            recipient: recipientId, 
+            message, 
+            notificationType
         })
 
         if(!notifyUser) throw new BadRequestException('notification not created')
     
-        // await this.getRecipient(recipient)  
 
-        // await this.sendEmail(
-        //      user.email, 
-        //     `Welcome to ShopForYou! Verify Your Email`, 
-        //     'welcome', 
-        //     { name: user.firstName || 'User', email: user.email, otp }
-        // )
+        await this.sendEmail(
+            recipientId, 
+            notificationType, 
+            message, 
+            { name: recipient.name, email: recipient.email, message }
+        )
         return {
             msg: 'notificatin created',
             notifyUser
@@ -84,25 +87,31 @@ export class NotificationService {
     return this.notifyModel.updateMany({ userId, read: false }, { $set: { read: true } });
     }
 
-    async getRecipient(recipientDto: CreateNotificationRecipientDto) {
-        const {recipientModel, recipientId } = recipientDto
+    private async getRecipient(recipientDto: CreateNotificationRecipientDto) {
+        const {recipientType, recipientId } = recipientDto
 
-        let recipientEmail: string | null = null;
-
-        if (recipientModel === 'User') {
+        if (recipientType === 'User') {
         const user = await this.userModel.findById(recipientId);
-        recipientEmail = user?.email ?? null;
-        } else if (recipientModel === 'Vendor') {
+        if(!user) throw new NotFoundException(`user with id ${recipientId} not found`)
+            return { email: user.email, name: user.firstName ?? 'User' }
+        }
+        
+        if (recipientType === 'Vendor') {
         const vendor = await this.vendorModel
         .findById(recipientId)
         .populate('owner', 'email');
-        recipientEmail = vendor?.email ?? vendor?.owner?.email ?? null;
-    } else if (recipientModel === 'Admin') {
-        const admin = await this.adminModel.findById(recipientId);
-        recipientEmail = admin?.email ?? null;
-    }
+        if(!vendor) throw new NotFoundException(`vendor with id ${recipientId} not found`)
+            return {email: vendor.email, name: vendor.storeName ?? 'storeName' }
+        }
 
-    return recipientEmail;
+        if (recipientType === 'Admin') {
+        const admin = await this.adminModel.findById(recipientId);
+        if(!admin) throw new NotFoundException(`admin with id ${recipientId} not found`)
+            return { email: admin.email, name: admin.firstName ?? 'Admin' }
+        }
+        
+        throw new BadRequestException('Invalid recipient type')
+
     }
 
 

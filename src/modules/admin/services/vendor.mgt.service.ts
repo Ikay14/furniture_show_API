@@ -75,22 +75,21 @@ export class VendorManagementService {
         // if exists but not pending
         throw new BadRequestException(`Cannot approve: application is ${existing.status}`);
     }
-        try {
-        // clear cache explicitly
-        const keysToDelete = [`vendor:application:${vendorId}`,]
-        if (keysToDelete.length) await this.redisCache.del(...keysToDelete);
+    
+    
+        await this.redisCache.del(`vendor:application:${vendorId}`);
 
-    } catch (err) {
-        // log the cache error but do not fail the approval: cache is an optimization
-        this.logger.warn(`Cache invalidation failed for vendor ${vendorId}: ${err.message}`)
+        this.logger.warn(`Cache invalidation failed for vendor ${vendorId}`)
         
-    }
 
         await this.notificationService.createNotification({
-            recipient: vendorId,
+            recipientId: vendorId,
+            recipientType: 'Vendor',
             notificationType: NotificationType.VENDOR_APPROVED,
             message: 'Your vendor application has been approved'
     });
+    
+        this.logger.log('notification set')
 
         const safeApp = { ...updatedApp }
 

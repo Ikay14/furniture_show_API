@@ -14,40 +14,41 @@ export type AdminDocument = Admin & Document & {
 @Schema({ timestamps: true })
 export class Admin extends Document {
 
-    @Prop({ 
-            type: String,
-            default: uuidv4, 
-             unique: true, 
-             index: true, 
-             required: true 
-            })
-        adminId = String;
+  @Prop({ 
+          type: String,
+          default: uuidv4, 
+          unique: true, 
+          index: true, 
+          required: true 
+          })
+    adminId = String;
 
-    @Prop({
-        required: true, 
-        unique: true })
-        email: string;
+    @Prop({ required: true, unique: true })
+    email: string;
 
-    @Prop({
-        required: true })
-        password: string;
+    @Prop()
+    firstName?: string;
+    
+    @Prop()
+    lastName?: string;
+    
+    @Prop()
+    picture?: string;    
 
-    @Prop({
-            type: [String],
-            enum: Object.values(Roles),
-            default: [Roles.ADMIN]
-        })
+    @Prop({ required: true })
+    password: string;
+
+    @Prop({ type: [String], enum: Roles, default: Roles.ADMIN })
     roles: string[];
     
-      @Prop({})
-      otp: string;
+    @Prop({})
+    otp: string;
     
-      @Prop({})
-      otpExpires: Date;    
+    @Prop({})
+    otpExpires: Date;    
 
-    @Prop({ 
-        default: false })
-        isSuperAdmin: boolean;
+    @Prop({ default: false })
+    isSuperAdmin: boolean;
 
     @Prop({ default: false })
     isActive: boolean;

@@ -13,8 +13,7 @@ export const VendorStatus = {
 
 export const Roles = {
   USER: 'user',
-  VENDOR: 'vendor',
-  ADMIN: 'admin',
+  VENDOR: 'vendor'
 } 
 
 
@@ -126,7 +125,7 @@ export class Vendor {
             enum: Object.values(Roles),
             default: [Roles.USER]
         })
-        roles: string
+        roles: string[]
 
         @Prop({ default: false}) 
         isVerified: boolean
