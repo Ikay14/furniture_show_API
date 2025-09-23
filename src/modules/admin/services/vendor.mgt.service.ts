@@ -9,7 +9,6 @@ import { CACHE_TTL } from "src/config/db.config";
 import { DeclineVendorDto } from "../DTO/decline.dto";
 import { Logger } from "@nestjs/common";
 import { NotificationService } from "src/modules/notification/notifcation.service"; 
-import { NotificationType } from "src/modules/notification/model/notification.model";
 
 @Injectable()
 export class VendorManagementService {
@@ -64,33 +63,27 @@ export class VendorManagementService {
             }
         }
 
-        const updatedApp = await this.vendorModel.findOneAndUpdate(filter, update, { new: true  }).lean
+        const updatedApp = await this.vendorModel.findOneAndUpdate(filter, update, { new: true  })
+        .lean()
 
         // call function to verify Documents like NIN
 
         if (!updatedApp) {
-         // Either not found or not in pending state
         const existing = await this.vendorModel.findOne({ vendorId }).lean();
         if (!existing) throw new NotFoundException(`Vendor application ${vendorId} not found`);
-        // if exists but not pending
         throw new BadRequestException(`Cannot approve: application is ${existing.status}`);
     }
-    
     
         await this.redisCache.del(`vendor:application:${vendorId}`);
 
         this.logger.warn(`Cache invalidation failed for vendor ${vendorId}`)
+
+        await this.notificationService.sendVendorApproval({
+            email: updatedApp.email,
+            vendorName: updatedApp.storeName,
+            status: updatedApp.status
+        })
         
-
-        await this.notificationService.createNotification({
-            recipientId: vendorId,
-            recipientType: 'Vendor',
-            notificationType: NotificationType.VENDOR_APPROVED,
-            message: 'Your vendor application has been approved'
-    });
-    
-        this.logger.log('notification set')
-
         const safeApp = { ...updatedApp }
 
         return {
@@ -102,6 +95,9 @@ export class VendorManagementService {
     async getAllVendorApplications(
         page: number, limit: number , status: string
     ){
+        const filter : any = {}
+
+        if(status) filter.status = status
 
         const cacheKey = `vendor:applications:status:${status}:page:${page}:limit:${limit}`;
 
@@ -109,20 +105,20 @@ export class VendorManagementService {
         if(cachedStatus) return JSON.parse(cachedStatus)
 
         const applications = await this.vendorModel
-        .find({ status })
+        .find(filter)
         .skip((page - 1) * limit)  
         .limit(limit)
 
         if( status && !applications.length) throw new BadRequestException(`No vendor applications found for status: ${status}`)
-
+            
         const formattedResponse = applications.map( application => ({ 
                 id: application.vendorId,
                 storeName: application.storeName,
                 description: application.description,
                 isVerified: application.isVerified,
-                status: application.status
+                status: application.status,
+                logo: application.storeLogo,
             }))
-
 
         await this.redisCache.set(cacheKey, JSON.stringify(formattedResponse), 'EX', CACHE_TTL);
 

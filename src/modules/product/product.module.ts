@@ -16,6 +16,7 @@ import { Category, CategorySchema } from '../admin/model/category.model';
     ])
   ],
   controllers: [ProductController],
-  providers: [ProductService, CloudinaryService]
+  providers: [ProductService, CloudinaryService],
+  exports: [ ProductService ]
 })
 export class ProductModule {}

@@ -7,6 +7,8 @@ import { Cart } from '../carts/model/carts.model';
 import { InjectConnection } from '@nestjs/mongoose';
 import { generateOrderRef } from 'src/utils/generate.order.reference';
 import { OrderStatus } from './model/order.model';
+import { PaymentService } from '../payment/payment.service';
+import { User } from '../user/model/user.model';
 
 
 @Injectable()
@@ -14,8 +16,10 @@ export class OrdersService {
     constructor(
         @InjectModel(Order.name) private orderModel: Model<Order>,
         @InjectModel(Cart.name) private cartModel: Model<Cart>,
+        @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(Product.name) private productModel: Model<Product>,
-        @InjectConnection() private readonly connection: Connection
+        @InjectConnection() private readonly connection: Connection,
+        private paymentService: PaymentService
     ){}
 
     async createOrder(userId: string, cartId: string): Promise<{ msg: string; order: any }> {
@@ -23,7 +27,12 @@ export class OrdersService {
     session.startTransaction()
 
     try {
-        const cart = await this.cartModel.findOne({ _id: cartId, user: userId }).session(session)
+        const user = await this.userModel.findById(userId).session(session)
+        if (!user) throw new NotFoundException('User not found')  
+
+        const cart = await this.cartModel.findOne({ userId, isActive: true })
+        .populate('products.productId')
+        .session(session)
         if (!cart || cart.products.length === 0) throw new BadRequestException('Empty or invalid cart')
 
 
@@ -49,20 +58,27 @@ export class OrdersService {
             { session }
         )
 }
-        const order = await this.orderModel.create(
-        [{
+        const order = await  new this.orderModel(
+        {
             user: userId,
             cart: cartId,
             products: cart.products,
             totalPrice: cart.totalPrice,
             orderRef: generateOrderRef(),
             status: OrderStatus.PROCESSING
-        }],
+        },
         { session }
 )
 
       // mark user cart as inactive
       await this.cartModel.updateOne({ _id: cartId }, { isActive: false }, { session })
+
+      await this.paymentService.initializePayment({
+        customerId: userId,
+        email: user.email,
+        amount: order[0].totalPrice, 
+        orderId: order[0]._id
+      })
 
       // Commit transaction
       await session.commitTransaction()

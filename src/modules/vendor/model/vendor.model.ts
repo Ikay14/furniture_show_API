@@ -114,10 +114,10 @@ export class Vendor {
         @Prop({})
         approvedAt: Date
 
-        @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true })
+        @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Admin' })
         approvedBy: Admin
 
-        @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Admin', required: true })
+        @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Admin' })
         declinedBy: Admin
        
         @Prop({

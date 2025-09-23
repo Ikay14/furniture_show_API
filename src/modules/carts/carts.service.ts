@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Cart } from './model/carts.model';
@@ -15,51 +15,53 @@ export class CartsService {
     @InjectModel(User.name) private userModel: Model<User>
 ) {}
 
-    async createCart(createCartDto: CreateCartDto, userId: string): 
-    Promise<{ msg: string; cart: Cart }> {
+async createCart(createCartDto: CreateCartDto, userId: string): Promise<{ msg: string; cart: Cart }> {
+  const { products } = createCartDto; // products: [{ productId, quantity }, ...]
+  if (!products || products.length === 0) {
+    throw new BadRequestException('Cart must contain at least one product');
+  }
 
-    const { products } = createCartDto;
+  // build ObjectId list
+  const productIds = products.map(p => new Types.ObjectId(p.productId));
 
-    const productIds = products.map(p => p.productId)
-   
+  // ensure user exists
+  const user = await this.userModel.findById(userId);
+  if (!user) throw new NotFoundException(`User with id ${userId} not found`);
 
-    const foundProducts = await this.productModel.find({ _id: { $in: productIds } })
+  // get product documents for the requested productIDs
+  const dbProducts = await this.productModel.find({ _id: { $in: productIds } }).lean();
+  if (dbProducts.length !== productIds.length) {
+    // some product IDs were not found
+    throw new NotFoundException('One or more products not found');
+  }
 
-    if (foundProducts.length !== products.length) {
-    throw new NotFoundException('One or more products not found')
-    }
-
-    let totalPrice = 0
-
-    const productMap = new Map<string, Product>()
-
-    foundProducts.forEach(prod => {
-    const idStr = (prod._id as Types.ObjectId).toString();
-    productMap.set(idStr, prod);
-});
-
-
-    products.forEach(item => {
-    const product = productMap.get(item.productId)
-    if (!product) return
-    totalPrice += product.price * item.quantity;
-    });
-
+  // compute totalPrice by matching each db product to the requested quantity
+  let totalPrice = 0;
+  const cartProducts = dbProducts.map(dbp => {
+    const requested = products.find(p => p.productId === dbp._id.toString());
+    const quantity = Math.max(1, (requested?.quantity ?? 1));
+    const price = Number(dbp.price ?? 0)
+    totalPrice += price * quantity;
     
-    const user = await this.userModel.findById(userId);
-    if (!user) throw new NotFoundException(`User with id ${userId} not found`);
-
-    const cart = await this.cartModel.create({
-        products,
-        user: userId,
-        totalPrice,
-    });
-
     return {
+      product: dbp._id,
+      quantity,
+      price
+    };
+  });
+
+  const cart = await this.cartModel.create({
+    products: cartProducts,
+    user: userId,
+    totalPrice,
+  });
+
+  return {
     msg: 'Cart created successfully',
     cart,
-    };
+  };
 }
+
 
 
     async getUserCart(userId: string): Promise<{ msg: string, carts: Cart[] }> {

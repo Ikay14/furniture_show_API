@@ -2,6 +2,9 @@ import { User } from "src/modules/user/model/user.model";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
+import Redis from "ioredis";
+import { InjectRedis } from "@nestjs-modules/ioredis";
+import { CACHE_TTL } from "src/config/db.config";
 
 type StatusEnum = 'verified' | 'unverified';
 
@@ -13,11 +16,17 @@ interface status {
 @Injectable()
 export class UserManagementService {
     constructor(@InjectModel(User.name)
-    private userModel: Model<User>
+    private userModel: Model<User>,
+    @InjectRedis() private redisCache: Redis,
 ){}
 
-    async ListAllUsers(status: string, page: number, limit: number): Promise<{ msg: string, users: User[], total: number, limit: number, page: number }> {
-        const query: any = {};
+    async ListAllUsers(status: string, page: number, limit: number) {
+        const query: any = {}
+
+        const cacheKey = `users:list:${status}:${page}:${limit}`;
+
+        const cachedUsers = await this.redisCache.get(cacheKey)
+        if (cachedUsers) return JSON.parse(cachedUsers)
 
         // Filter by isVerified property
         if (status === 'verified') {
@@ -26,16 +35,26 @@ export class UserManagementService {
             query.isVerified = false;
         }
 
-        const users = await this.userModel.find(query)
+        const users = await this.userModel
+            .find(query)
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit);
-        const total = await this.userModel.countDocuments(query)
+
+        const response = users.map((user) => ({
+            id: user._id,
+            email: user.email,
+            name: user.firstName + ' ' + user.lastName,
+            isVerified: user.isVerified,
+            dp: user.picture,
+        }))
+
+        await this.redisCache.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL);
 
         return {
             msg: 'users returned',
-            users,
-            total,
+            response,
+            total: await this.userModel.countDocuments(query),
             limit,
             page
         }

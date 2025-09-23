@@ -1,17 +1,19 @@
 import { Module } from '@nestjs/common';
 import { Notification, NotificationSchema } from './model/notification.model';
 import { MongooseModule } from '@nestjs/mongoose';
-import { NotificationCron } from './notification.cron';
+import { NotificationCron } from '../events/cron.jobs';
 import { NotificationService } from '../notification/notifcation.service';
+import { EventModule } from '../events/event.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Notification.name, schema: NotificationSchema },
     ]),
+    EventModule
   ],
   controllers: [],
-  providers: [NotificationCron, NotificationService],
-  exports: [NotificationModule]
+  providers: [ NotificationService ],
+  exports: [NotificationService]
 })
 export class NotificationModule {}

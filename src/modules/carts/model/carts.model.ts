@@ -1,5 +1,5 @@
 import { SchemaFactory, Schema, Prop } from "@nestjs/mongoose";
-import { Document, Types } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -15,10 +15,10 @@ export class Cart extends Document
     })
    cartId: string;
 
-  @Prop({ ref: 'User', type: Types.ObjectId })
+  @Prop({ ref: 'User', type: mongoose.Schema.Types.ObjectId })
   user: Types.ObjectId;
 
-  @Prop({ type: [{ productId: { type: Types.ObjectId, ref: 'Product' }, quantity: { type: Number, default: 1 } }] })
+  @Prop({ type: [{ productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' }, quantity: { type: Number, default: 1 } }] })
   products: { productId: Types.ObjectId; quantity: number }[]
 
   @Prop({ type: Number, default: 0 })

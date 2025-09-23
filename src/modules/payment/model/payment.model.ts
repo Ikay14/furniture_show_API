@@ -34,7 +34,6 @@ export class Payment extends Document {
     @Prop({ type: Date })
     paymentDate: Date
    
-
     @Prop({ type: String, enum: Object.values(PaymentStatus), required: true })
     status: string;
 

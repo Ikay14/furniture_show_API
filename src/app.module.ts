@@ -16,6 +16,8 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { VendorModule } from './modules/vendor/vendor.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationModule } from './modules/notification/notification.module';
+import { EventModule } from './modules/events/event.module';
 
 @Module({
   imports: [
@@ -40,8 +42,10 @@ import { ScheduleModule } from '@nestjs/schedule';
     OrdersModule,
     PaymentModule,
     VendorModule,
+    NotificationModule,
+    EventModule
   ], 
   controllers: [AppController],
   providers: [AppService],
-})
+}) 
 export class AppModule {}

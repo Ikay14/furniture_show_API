@@ -1,0 +1,18 @@
+export const notificationTemplates = {
+  WELCOME_EMAIL: {
+    subject: 'Welcome to ShopForYou!',
+    template: 'welcome',
+    channels: ['EMAIL'],
+  },
+  FORGOT_PASSWORD: {
+    subject: 'Reset your password',
+    template: 'resetPassword',
+    channels: ['EMAIL'],
+  },
+  VENDOR_APPROVAL: {
+    subject: 'Vendor Approved!',
+    template: 'vendor',
+    channels: ['EMAIL', 'APP'],
+  },
+};
+

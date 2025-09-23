@@ -18,7 +18,7 @@ export class PaymentService {
 
   async initializePayment(paymentData:PaymentDTO ) {
 
-    const { orderId, amount, email, currency, customerId } = paymentData 
+    const { orderId, amount, email, customerId } = paymentData 
 
     const order = await this.orderModel.findById(orderId);
     if (!order) throw new NotFoundException('Order not found');
@@ -42,7 +42,6 @@ export class PaymentService {
         reference: txRef,
         amount: amount * 100,
         email,
-        currency,
         metadata: {
             orderId,
             customerId,

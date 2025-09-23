@@ -11,6 +11,7 @@ import { LoginDTO } from '../user/DTO/login.user.dto';
 import { ValidateDTO } from '../user/DTO/otp.validate.dto';
 import { MailService } from 'src/services/email.service';
 import { RequestOtpDto } from '../user/DTO/request.dto';
+import { NotificationService } from '../notification/notifcation.service';
 
 @Injectable()
 export class AuthService {
@@ -18,7 +19,8 @@ export class AuthService {
         @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
         private configService: ConfigService,
         private jwtService: JwtService,
-        private mailService: MailService
+        private mailService: MailService,
+        private notifyService: NotificationService
     ) {}
 
 
@@ -40,12 +42,13 @@ export class AuthService {
         otpExpires: otpExp
       })
 
-       await this.sendEmail(
-            user.email, 
-            `Welcome to ShopForYou! Verify Your Email`, 
-            'welcome', 
-            { name: user.firstName || 'User', email: user.email, otp }
-        )
+       await this.notifyService.sendWelcomeEmail({
+        email: user.email,
+        firstName: user.firstName,
+        otp
+       })
+       console.log('Welcome email job added to the queue');
+       
     }
 
     // Generate user app's own access token
@@ -93,12 +96,11 @@ export class AuthService {
 
         const accessToken = await this.generateAccessToken(savedUser)
 
-        await this.sendEmail(
-            newUser.email, 
-            `Welcome to ShopForYou! Verify Your Email`, 
-            'welcome', 
-            { name: newUser.firstName || 'User', email: newUser.email, otp }
-        )
+        await this.notifyService.sendWelcomeEmail({
+        email: newUser.email,
+        firstName: newUser.firstName,
+        otp
+       })
         
         return {
             msg: 'new user created successfully',

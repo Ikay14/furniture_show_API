@@ -3,9 +3,6 @@ import { AdminController } from './controllers/admin.auth-controller';
 import { AdminService } from './services/admin.auth-service';
 import { Admin, AdminSchema } from './model/admin.model';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Order, OrderSchema } from '../orders/model/order.model';
-import { Product, ProductSchema } from '../product/model/product.model';
-import { User, UserSchema } from '../user/model/user.model';
 import { Category, CategorySchema } from './model/category.model'
 import { JwtStrategy } from 'src/stratgey/jwt.strategy';
 import { CloudinaryService } from 'src/services/cloudinary.service';
@@ -22,16 +19,20 @@ import { RedisModule } from '@nestjs-modules/ioredis';
 import { JwtModule } from '@nestjs/jwt';
 import { Notification, NotificationSchema } from '../notification/model/notification.model';
 import { VendorModule } from '../vendor/vendor.module';
-import { NotificationService } from '../notification/notifcation.service';
+import { EventModule } from '../events/event.module';
+import { AuthModule } from '../auth/auth.module';
+import { ProductModule } from '../product/product.module';
+import { OrdersModule } from '../orders/orders.module';
+import { NotificationModule } from '../notification/notification.module';
+import { User, UserSchema } from '../user/model/user.model';
+
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Admin.name, schema: AdminSchema },
       { name: User.name, schema: UserSchema },
-      { name: Product.name, schema: ProductSchema },
       { name: Category.name, schema: CategorySchema },
-      { name: Order.name, schema: OrderSchema },
       { name: Vendor.name, schema: VendorSchema },
       { name: Notification.name, schema: NotificationSchema },
     ]),
@@ -47,8 +48,13 @@ import { NotificationService } from '../notification/notifcation.service';
           secret: process.env.JWT_SECRET, 
           signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1d' },
     }),
+    EventModule,
+    AuthModule,
+    ProductModule,
+    OrdersModule,
+    NotificationModule
   ],
   controllers: [AdminController, CategoryController, UserManagementController, VendorManagementController],
-  providers: [AdminService, JwtStrategy, MailService, CategoryService, UserManagementService, CloudinaryService, GoogleStrategy,        VendorManagementService, NotificationService, VendorModule ],
+  providers: [AdminService, JwtStrategy, MailService, CategoryService, UserManagementService, CloudinaryService, GoogleStrategy,        VendorManagementService, VendorModule,  ],
 })
 export class AdminModule {}
