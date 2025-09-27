@@ -56,5 +56,6 @@ import { User, UserSchema } from '../user/model/user.model';
   ],
   controllers: [AdminController, CategoryController, UserManagementController, VendorManagementController],
   providers: [AdminService, JwtStrategy, MailService, CategoryService, UserManagementService, CloudinaryService, GoogleStrategy,        VendorManagementService, VendorModule,  ],
+  exports: [RedisModule]
 })
 export class AdminModule {}

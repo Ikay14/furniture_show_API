@@ -7,7 +7,9 @@ import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { Product } from "src/modules/product/model/product.model";
 import { CloudinaryService } from "src/services/cloudinary.service";
 import { Vendor } from "../model/vendor.model";
-
+import { NotificationService } from "src/modules/notification/notifcation.service";
+import Redis from "ioredis";
+import { CACHE_TTL } from "src/config/db.config";
 
 
 @Injectable()
@@ -15,16 +17,15 @@ export class ProductManagementService {
     constructor(
         @InjectModel(Product.name) private productModel: Model<Product>,
         @InjectModel(Vendor.name) private vendorModel: Model<Vendor>,
-        private cloudinaryService: CloudinaryService
+        private notificationService: NotificationService,
+        private cloudinaryService: CloudinaryService,
+        private redisCache: Redis
     ) {}
 
     async createNewproduct(productDto: ProductDTO, vendorId: string ): Promise<{ msg: string; newProduct: Product }> {
         const { name, description_of_product, price, stock, dimensions } = productDto
 
-        // const isVendorId =  await this.vendorModel.findOne({ vendorId })
-        // if(!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
-
-        const product = await this.productModel.findOne({name})
+        const product = await this.productModel.findOne({ name })
         if (product) throw new BadRequestException('Product already exists')
 
         const newProduct = await new this.productModel({
@@ -36,7 +37,16 @@ export class ProductManagementService {
             createdBy : vendorId,
         })
 
-        await newProduct.save();
+        await newProduct.save()
+
+        const vendor = await this.vendorModel.findById(vendorId)
+        if(!vendor) throw new NotFoundException('vendor not found')
+
+        await this.notificationService.sendNewProductNotification({
+            name: newProduct.name,
+            email: vendor.email,
+            vendorName: vendor.storeName
+        })
 
         return {
             msg: 'Product created successfully',
@@ -86,6 +96,12 @@ export class ProductManagementService {
 
         const { page, limit } = param
 
+        const cacheKey = `vendor-products:${page}:${limit}` 
+
+        const cachedvenProducts = await this.redisCache.get(cacheKey)
+        if(cachedvenProducts) return JSON.parse(cachedvenProducts)
+
+
         const [products, total] = await Promise.all([
             this.productModel.find({ vendor: vendorId })
                 .populate('vendor', 'storeName email')
@@ -98,6 +114,7 @@ export class ProductManagementService {
         // if no products found, throw an error
         if (!products) throw new BadRequestException('No products found for the given query');
 
+        await this.redisCache.hset(cacheKey, JSON.stringify(products), 'EX', CACHE_TTL)
         // return the products
         return {
             msg: 'Products fetched successfully',

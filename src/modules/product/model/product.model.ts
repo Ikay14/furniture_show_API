@@ -18,7 +18,7 @@ export class Product extends Document {
         type: String,
         index: true
      })
-  name: String;
+  name: string;
 
   @Prop({ required: true })
   description: string;

@@ -13,7 +13,7 @@ import { EventModule } from '../events/event.module';
     EventModule
   ],
   controllers: [],
-  providers: [ NotificationService ],
+  providers: [ NotificationService],
   exports: [NotificationService]
 })
 export class NotificationModule {}

@@ -12,6 +12,8 @@ import { CloudinaryService } from 'src/services/cloudinary.service';
 import { Order, OrderSchema } from '../orders/model/order.model';
 import { User, UserSchema } from '../user/model/user.model';
 import { AuthModule } from '../auth/auth.module';
+import { NotificationModule } from '../notification/notification.module';
+import { AdminModule } from '../admin/admin.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -20,7 +22,9 @@ import { AuthModule } from '../auth/auth.module';
       { name: Order.name, schema: OrderSchema },
       { name: User.name, schema: UserSchema },
     ]),
-    AuthModule
+    AuthModule,
+    NotificationModule,
+    AdminModule
   ],
   controllers: [ProductManagementController, OrderManagementController, ApplyForVendorController],
   providers: [ProductManagementService, OrderManagementService, ApplyForVendorService, CloudinaryService],

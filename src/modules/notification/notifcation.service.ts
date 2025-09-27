@@ -37,13 +37,13 @@ export class NotificationService {
     }, { delay: 5000, priority: 3 })
 }
 
-    async sendNewProductNotification(product: { name: string; vendor: { email: string; vendorName: string } }) {
+    async sendNewProductNotification(product: { name: string; email: string; vendorName: string  }) {
         await this.eventQueue.sendNotification('PRODUCT_CREATED', {
         type: 'PRODUCT_CREATED',
         channel: ['EMAIL', 'APP'],
-        to: product.vendor.email,
+        to: product.email,
         subject: 'New Product Added!',
-        data: { product: product.name, vendor: product.vendor.vendorName },
+        data: { product: product.name, vendor: product.vendorName },
     }, { delay: 5000, priority: 2 })
   }
 
