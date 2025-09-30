@@ -25,6 +25,8 @@ import { ProductModule } from '../product/product.module';
 import { OrdersModule } from '../orders/orders.module';
 import { NotificationModule } from '../notification/notification.module';
 import { User, UserSchema } from '../user/model/user.model';
+import { forwardRef } from '@nestjs/common'
+
 
 
 @Module({
@@ -52,10 +54,12 @@ import { User, UserSchema } from '../user/model/user.model';
     AuthModule,
     ProductModule,
     OrdersModule,
-    NotificationModule
+    NotificationModule,
+    forwardRef( ()=> VendorModule)
   ],
   controllers: [AdminController, CategoryController, UserManagementController, VendorManagementController],
-  providers: [AdminService, JwtStrategy, MailService, CategoryService, UserManagementService, CloudinaryService, GoogleStrategy,        VendorManagementService, VendorModule,  ],
+  providers: [AdminService, JwtStrategy, MailService, CategoryService, UserManagementService, CloudinaryService, GoogleStrategy,VendorManagementService ],
+
   exports: [RedisModule]
 })
 export class AdminModule {}

@@ -1,20 +1,19 @@
 import { SchemaFactory, Prop, Schema } from "@nestjs/mongoose";
 import mongoose, { Document, Types } from "mongoose";
-import shortUUID from "short-uuid";
+import { v4 as uuidv4 } from 'uuid';
 
 @Schema({ timestamps: true })
 export class Product extends Document {
 
-      @Prop({ 
-            type: String,
-             default: () => shortUUID.generate(), 
-             unique: true, 
-             index: true, 
-             required: true 
-            })
-        _ids = String;
+  @Prop({ 
+        type: String,
+        default: uuidv4, 
+        unique: true, 
+        required: true 
+         })
+  productId = String;
 
-    @Prop({ 
+  @Prop({ 
         type: String,
         index: true
      })
@@ -41,8 +40,8 @@ export class Product extends Document {
   @Prop({ required: true })
   images: string[]; 
 
-  @Prop()
-  mainImage?: string;
+  // @Prop()
+  // mainImage?: string;
 
   @Prop()
   thumbnail?: string;
@@ -69,7 +68,7 @@ export class Product extends Document {
     @Prop({ type: [String] })
     colorOptions?: string[];
 
-    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Review', required: true })
+    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Review' })
     reviews: Types.ObjectId;
 
     @Prop({ type: [String] })
@@ -84,7 +83,7 @@ export class Product extends Document {
     @Prop({ default: 'active' })
     status: 'active' | 'inactive' | 'draft';
 
-    @Prop({ type: String, ref: 'Vendor', required: true })
+    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true })
     vendor: string; // Vendor UUID
 
 }

@@ -1,7 +1,7 @@
-import { Controller, UseInterceptors, Param, Query, Post, Patch, Body, Get, Delete, Req, UseGuards } from "@nestjs/common";
+import { Controller, UseInterceptors, Param, Query, Post, Patch, Body, Get, Delete, Req, UseGuards, UploadedFiles } from "@nestjs/common";
 import { ProductManagementService } from "../services/product-management.service";
 import { ProductDTO } from "src/modules/product/DTO/product.dto";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FilesInterceptor } from "@nestjs/platform-express";
 import { ProductImageDto } from "src/modules/product/DTO/product.image.dto";
 import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { JwtAuthGuard } from "src/guards/jwt.guard";
@@ -20,14 +20,18 @@ export class ProductManagementController {
     ){}
 
     @Post('create-product')
+    @UseInterceptors(FilesInterceptor('images', 4))
     @ApiOperation({ summary: 'Create a new product' })
     @ApiBody({ type: ProductDTO })
     @ApiResponse({ status: 201, description: 'Product created successfully' })
     async createNewProduct(
         @Body() productDto: ProductDTO,
-        @GetUser('vendorId') vendorId: string
+        @UploadedFiles() images: Express.Multer.File[],
     ) {
-        return this.productService.createNewproduct(productDto, vendorId)
+
+        return this.productService.createNewproduct( productDto,
+        images
+         )
     }
 
     @Patch('/:id/images')
@@ -35,7 +39,7 @@ export class ProductManagementController {
     @ApiParam({ name: 'id', type: String, description: 'Product ID' })
     @ApiBody({ type: ProductImageDto })
     @ApiResponse({ status: 200, description: 'Product images uploaded successfully' })
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(FilesInterceptor('files'))
     async uploadImage(@Req() req, @Body() file: ProductImageDto) {
         return this.productService.uploadProductImage(file)
     }

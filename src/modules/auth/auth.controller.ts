@@ -68,7 +68,7 @@ export class AuthController {
         return { msg, user };
     }
 
-    @Post('refresh-token')
+    @Post('refresh-token') 
     @ApiOperation({ summary: 'Refresh user access token' })
     @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
     async refreshToken(

@@ -28,16 +28,8 @@ export class NotificationCron {
   /**
    * Example: Check new products every 5 minutes and notify vendors
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
-  async checkNewProducts() {
-    this.logger.log('Running cron: Checking for new products...');
-    
-    // Fetch newly added products in the last 5 min
-    // const newProducts = await this.productService.findNew();
-    // for (const product of newProducts) {
-    //   await this.notificationsService.notifyNewProduct(product, product.vendor);
-    // }
-  }
+
+  
 
 
   @Cron(CronExpression.EVERY_10_MINUTES)
@@ -48,7 +40,7 @@ export class NotificationCron {
   }
 
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_1ST_DAY_OF_MONTH_AT_NOON)
   async deleteUnverifiedUsers(){
     this.logger.log('Running cron: Deleting unverified users...');
     await this.userModel.deleteMany({ isVerified: false });

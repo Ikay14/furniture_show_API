@@ -6,4 +6,4 @@ export class ValidateDTO {
 
     @IsNumber()
     otp: number
-}
+} 

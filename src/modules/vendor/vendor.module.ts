@@ -14,6 +14,10 @@ import { User, UserSchema } from '../user/model/user.model';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationModule } from '../notification/notification.module';
 import { AdminModule } from '../admin/admin.module';
+import { forwardRef } from '@nestjs/common';
+
+ 
+
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -24,10 +28,11 @@ import { AdminModule } from '../admin/admin.module';
     ]),
     AuthModule,
     NotificationModule,
-    AdminModule
+    forwardRef(() => AdminModule),
+
   ],
   controllers: [ProductManagementController, OrderManagementController, ApplyForVendorController],
   providers: [ProductManagementService, OrderManagementService, ApplyForVendorService, CloudinaryService],
   exports: [VendorModule]
 })
-export class VendorModule {}
+export class VendorModule {} 

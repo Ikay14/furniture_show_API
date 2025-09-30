@@ -4,6 +4,11 @@ import { Product } from './model/product.model';
 import { Model } from 'mongoose';
 import { Category } from '../admin/model/category.model';
 
+export interface filterList {
+    name?: string,
+    price?: number,
+    category?: string
+}
 
 
 export class ProductService {
@@ -12,36 +17,39 @@ export class ProductService {
         @InjectModel(Category.name) private categoryModel: Model<Category>
     ) {}
 
-    async getAllProducts(param: { page: number; limit: number }, query: { key: string; value: string }): Promise<{ products: Product[]; pagination: { page: number; limit: number; total: number }; msg: string }> {
-            // accept pagination and query parameters
-            const { page, limit } = param;
-    
-            // destructure the query parameters
-            const { key, value } = query;
+    async getAllProducts(page: number, limit: number, filterBy: filterList) {
+
+            const filter: any = {}
+
+            if(filterBy.name) filter['name'] = filterBy.name
+            if(filterBy.price) filter['price'] = filterBy.price
+            if(filterBy.category) filter['category'] = filterBy.category
             
-            const products = await this.productModel.find({ [key]: value })
+            const products = await this.productModel
+                .find(filter)
                 .skip((page - 1) * limit)
-                .limit(limit);
+                .limit(limit)
+                .lean()
     
             // if no products found, throw an error
-                if( query && !products.length) throw new BadRequestException('No products found for the given query');
+                if( filter && !products.length) throw new BadRequestException('No products found for the given query');
     
                 if (!products.length && products.length === 0) throw new BadRequestException('No products found');
     
             // return the products
             return {
-                msg: 'Products fetched successfully',
-                pagination: {
+                products,
+                 pagination: {
                     page,
                     limit,
-                    total: await this.productModel.countDocuments({ [key]: value }),
+                    total: await this.productModel.countDocuments({ filter }),
                 },
-                products
             }
-        }
-    
+}
+
         async getAProduct(productId: string):Promise<{msg: string, product: Product}>{
             const product = await this.productModel.findOne({ productId })
+            .populate('category', 'name')
     
             if(!product || product.inStock === 0) throw new NotFoundException('Product Found')
     
@@ -54,7 +62,7 @@ export class ProductService {
     async getProductByCategory(categoryId: string, page: number, limit: number): Promise<{ msg: string; products: Product[], total: number; limit: number; page: number }> {
 
         const products = await this.productModel.find({ category: categoryId })
-        .populate('category')
+        .populate('category', 'name')
         .skip((page - 1) * limit)
         .limit(limit)
         .sort({ createdAt: -1 })

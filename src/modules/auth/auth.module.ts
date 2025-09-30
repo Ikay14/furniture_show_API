@@ -9,6 +9,7 @@ import { MailService } from 'src/services/email.service';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { NotificationModule } from '../notification/notification.module';
+import { Vendor, VendorSchema } from '../vendor/model/vendor.model';
 
 @Module({
   imports:[
@@ -18,7 +19,8 @@ import { NotificationModule } from '../notification/notification.module';
       signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1d' },
     }),
     MongooseModule.forFeature([
-      { name: User.name, schema: UserSchema }
+      { name: User.name, schema: UserSchema },
+      { name: Vendor.name, schema: VendorSchema }
     ]),
     NotificationModule
   ],

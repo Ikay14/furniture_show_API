@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { User, UserDocument } from '../user/model/user.model';
 import { ConfigService } from '@nestjs/config';
 import { RegisterDto } from '../user/DTO/register.user.dto';
@@ -12,9 +12,12 @@ import { ValidateDTO } from '../user/DTO/otp.validate.dto';
 import { MailService } from 'src/services/email.service';
 import { RequestOtpDto } from '../user/DTO/request.dto';
 import { NotificationService } from '../notification/notifcation.service';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class AuthService {
+
+    private logger = new Logger(AuthService.name)
     constructor (
         @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
         private configService: ConfigService,
@@ -47,7 +50,8 @@ export class AuthService {
         firstName: user.firstName,
         otp
        })
-       console.log('Welcome email job added to the queue');
+
+       this.logger.log('Welcome email job added to the queue');
        
     }
 
@@ -111,13 +115,16 @@ export class AuthService {
 
     async loginUser(loginDto: LoginDTO): Promise<{ msg: string, accessToken: string; user: Partial<User>; }> {
         const { email, password } = loginDto
+
         const user = await this.userModel.findOne({ email });
-        if (!user) throw new BadRequestException(`User with ${email} not found`);
+        if (!user || !user.password) throw new UnauthorizedException('Invalid credentials')
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) throw new BadRequestException(`Invalid credentials`);
+        const isMatch = await bcrypt.compare(password, user.password)
+        if (!isMatch) throw new BadRequestException(`Invalid credentials provided`);
 
-        const accessToken = await this.generateAccessToken(user);
+
+        const accessToken = await this.generateAccessToken(user)
+
         return {
             msg: 'user login successful',
             accessToken,

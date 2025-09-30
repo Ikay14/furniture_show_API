@@ -10,6 +10,7 @@ import { Vendor } from "../model/vendor.model";
 import { NotificationService } from "src/modules/notification/notifcation.service";
 import Redis from "ioredis";
 import { CACHE_TTL } from "src/config/db.config";
+import { InjectRedis } from "@nestjs-modules/ioredis";
 
 
 @Injectable()
@@ -19,22 +20,28 @@ export class ProductManagementService {
         @InjectModel(Vendor.name) private vendorModel: Model<Vendor>,
         private notificationService: NotificationService,
         private cloudinaryService: CloudinaryService,
-        private redisCache: Redis
+        @InjectRedis() private redisCache: Redis
     ) {}
 
-    async createNewproduct(productDto: ProductDTO, vendorId: string ): Promise<{ msg: string; newProduct: Product }> {
-        const { name, description_of_product, price, stock, dimensions } = productDto
+    async createNewproduct(productDto: ProductDTO,images: Express.Multer.File[] ): Promise<{ msg: string; newProduct: Product }> {
+        const { name, description, price, inStock, dimensions, vendorId } = productDto
+
+        if (!images || images.length === 0) throw new BadRequestException('Product image is required')
 
         const product = await this.productModel.findOne({ name })
         if (product) throw new BadRequestException('Product already exists')
 
+        const imageUpload = await Promise.all(
+            images.map(image => this.cloudinaryService.uploadFile(image, 'products', 'image'))
+        );
         const newProduct = await new this.productModel({
             name,
-            description_of_product,
+            description,
             price,
-            stock,
+            inStock,
             dimensions,
-            createdBy : vendorId,
+            vendor: vendorId,
+            images: imageUpload.map(imag => imag.secure_url)
         })
 
         await newProduct.save()

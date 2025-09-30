@@ -1,6 +1,8 @@
 import { Controller, Post, UseInterceptors, Req, Body, Patch, Get, Param, Query, Delete } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { ApiTags, ApiOperation, ApiQuery, ApiParam, ApiResponse } from '@nestjs/swagger';
+import { filterList } from './product.service'
+
 
 @ApiTags('Products')
 @Controller('product')
@@ -17,16 +19,12 @@ export class ProductController {
     async getAllProducts(
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '10',
-        @Query('key') key: string = 'name', 
-        @Query('value') value: string = '', 
+        @Query('filter') filter: filterList  
     ){
         const pageNum = Math.max(Number(page), 1);
         const limitNum = Math.max(Number(limit), 1);
 
-        return this.productService.getAllProducts(
-            { page: pageNum, limit: limitNum },
-            { key, value }
-        )
+        return this.productService.getAllProducts(pageNum, limitNum, filter)
     }  
 
     @Get(':id')

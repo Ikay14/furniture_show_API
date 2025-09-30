@@ -43,7 +43,6 @@ export class User extends Document {
     @Prop({
       type: String,
         minlength: 6,
-        select: false, // Exclude password from queries by default
     })
     password?: string;
 
