@@ -2,7 +2,6 @@ import { Controller, UseInterceptors, Param, Query, Post, Patch, Body, Get, Dele
 import { ProductManagementService } from "../services/product-management.service";
 import { ProductDTO } from "src/modules/product/DTO/product.dto";
 import { FilesInterceptor } from "@nestjs/platform-express";
-import { ProductImageDto } from "src/modules/product/DTO/product.image.dto";
 import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { JwtAuthGuard } from "src/guards/jwt.guard";
 import { Roles } from "src/decorators/roles.decorator";
@@ -34,15 +33,6 @@ export class ProductManagementController {
          )
     }
 
-    @Patch('/:id/images')
-    @ApiOperation({ summary: 'Upload images for a product' })
-    @ApiParam({ name: 'id', type: String, description: 'Product ID' })
-    @ApiBody({ type: ProductImageDto })
-    @ApiResponse({ status: 200, description: 'Product images uploaded successfully' })
-    @UseInterceptors(FilesInterceptor('files'))
-    async uploadImage(@Req() req, @Body() file: ProductImageDto) {
-        return this.productService.uploadProductImage(file)
-    }
 
     @Get()
     @ApiOperation({ summary: 'Get all products with pagination and optional filtering' })
@@ -50,7 +40,7 @@ export class ProductManagementController {
     @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Number of products per page' })
     @ApiResponse({ status: 200, description: 'Products fetched successfully' })
     async getAllProducts(
-        @GetUser('vendorId') vendorId: string,
+        @Query('vendorId') vendorId: string,
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '10',
     ){
@@ -58,8 +48,7 @@ export class ProductManagementController {
         const limitNum = Math.max(Number(limit), 1);
 
         return this.productService.getAllVendorProducts(
-            vendorId,
-            { page: pageNum, limit: limitNum }
+            vendorId, pageNum, limitNum 
         );
     }
 
@@ -72,13 +61,16 @@ export class ProductManagementController {
         return this.productService.getAProduct(id)
     }
 
-    @Patch(':id/update-product')
+    @Patch('update-product')
     @ApiOperation({ summary: 'Update a product by its ID' })
-    @ApiParam({ name: 'id', type: String, description: 'Product ID' })
+    @UseInterceptors(FilesInterceptor('images', 4))
     @ApiBody({ type: UpdateDTO })
     @ApiResponse({ status: 200, description: 'Product updated successfully' })
-    async updateProduct(@Body()update: UpdateDTO){
-        return this.productService.updateProduct(update)
+    async updateProduct(
+        @Body()update: UpdateDTO,
+        @UploadedFiles() images: Express.Multer.File[],
+    ){
+        return this.productService.updateProduct(update, images)
     }
 
     @Delete(':id/delete-product')

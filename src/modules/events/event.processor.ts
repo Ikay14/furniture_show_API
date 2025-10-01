@@ -7,16 +7,18 @@ import { notificationTemplates } from "../notification/notification.templates";
 import { InjectModel } from "@nestjs/mongoose";
 import { Notification } from "../notification/model/notification.model";
 import { Model } from "mongoose";
+import { Logger } from "@nestjs/common";
 
 
 
 @Processor('notification')
 export class EmailProcessor extends WorkerHost {
+  private readonly logger = new Logger(EmailProcessor.name);
   constructor(
     private readonly mailService: MailService,
     @InjectModel(Notification.name) private notificationModel: Model<Notification>,
   ) {
-    super(); 
+    super()
   }
 
   async process(job: Job<NotificationPayload>): Promise<any> {
@@ -32,11 +34,11 @@ export class EmailProcessor extends WorkerHost {
     const config = notificationTemplates[type];
 
     if (!config) {
-      console.warn(`No configuration found for notification type: ${type}`);
+      this.logger.warn(`No configuration found for notification type: ${type}`);
       return;
     }
 
-    console.log(`Processing job: ${type} for ${to} via ${channel}`);
+    this.logger.log(`Processing job: ${type} for ${to} via ${channel}`);
 
         if (channel.includes('EMAIL') && config.template) {
           await this.mailService.sendMailWithTemplate(
@@ -45,7 +47,7 @@ export class EmailProcessor extends WorkerHost {
             config.template,
             data
           )
-          console.log(`✉️ Email sent to ${to} using template ${config.templates}`);
+          this.logger.log(`✉️ Email sent to ${to} using template ${config.template}`);
         }
 
 

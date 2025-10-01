@@ -65,14 +65,14 @@ export class Product extends Document {
     @Prop()
     material?: string;
 
-    @Prop({ type: [String] })
-    colorOptions?: string[];
+    @Prop({ required: true})
+    colorOptions: string[]
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Review' })
     reviews: Types.ObjectId;
 
     @Prop({ type: [String] })
-    tags?: string[];
+    tags: string[];
 
     @Prop({ default: 0 })
     numReviews: number;

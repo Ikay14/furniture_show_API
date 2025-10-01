@@ -1,8 +1,7 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
 import { ProductDTO } from "src/modules/product/DTO/product.dto";
-import { ProductImageDto } from "src/modules/product/DTO/product.image.dto";
 import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { Product } from "src/modules/product/model/product.model";
 import { CloudinaryService } from "src/services/cloudinary.service";
@@ -15,6 +14,7 @@ import { InjectRedis } from "@nestjs-modules/ioredis";
 
 @Injectable()
 export class ProductManagementService {
+    private readonly logger = new Logger(ProductManagementService.name);
     constructor(
         @InjectModel(Product.name) private productModel: Model<Product>,
         @InjectModel(Vendor.name) private vendorModel: Model<Vendor>,
@@ -24,7 +24,7 @@ export class ProductManagementService {
     ) {}
 
     async createNewproduct(productDto: ProductDTO,images: Express.Multer.File[] ): Promise<{ msg: string; newProduct: Product }> {
-        const { name, description, price, inStock, dimensions, vendorId } = productDto
+        const { name, vendorId } = productDto
 
         if (!images || images.length === 0) throw new BadRequestException('Product image is required')
 
@@ -35,11 +35,7 @@ export class ProductManagementService {
             images.map(image => this.cloudinaryService.uploadFile(image, 'products', 'image'))
         );
         const newProduct = await new this.productModel({
-            name,
-            description,
-            price,
-            inStock,
-            dimensions,
+            ...productDto,
             vendor: vendorId,
             images: imageUpload.map(imag => imag.secure_url)
         })
@@ -63,73 +59,36 @@ export class ProductManagementService {
     } 
 
 
- async uploadProductImage(productImage: ProductImageDto) {
-    const { productId, file } = productImage;
-
-    if (!productId || !file) throw new BadRequestException('Missing required fields: vendorId, productId, or file')
-
-    // const isVendor = await this.vendorModel.findOne({ vendorId });
-    // if (!isVendor) throw new UnauthorizedException('Unauthorized action. Vendor access required.')
-
-    const folder = `products/${productId}`
-
-    let imageUpload;
-    try {
-        imageUpload = await this.cloudinaryService.uploadFile(file, folder, 'image');
-    } catch (err) {
-        throw new InternalServerErrorException('Image upload failed. Please try again later.');
-    }
- 
-
-    const product = await this.productModel.findOneAndUpdate(
-        { productId },
-        { $set: { imageUrl: imageUpload?.secure_url } },
-        { new: true, runValidators: true }
-    )
-
-    if (!product) throw new NotFoundException('Product not found')
-
-    return {
-        msg: 'Product image uploaded successfully',
-        productId: product._id,
-        imageUrl: product.images
-    };
-}
-
-
     async getAllVendorProducts(
-        vendorId: string,
-        param: { page: number; limit: number }) {
-
-        const { page, limit } = param
+        vendorId: string, page: number, limit: number ) {
+        console.log(vendorId);
 
         const cacheKey = `vendor-products:${page}:${limit}` 
-
         const cachedvenProducts = await this.redisCache.get(cacheKey)
         if(cachedvenProducts) return JSON.parse(cachedvenProducts)
 
+        const isVendor = await this.vendorModel.findById(vendorId)
+        if(!isVendor) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
+        this.logger.log(`Fetching products for vendorId: ${vendorId}, page: ${page}, limit: ${limit}`);
 
-        const [products, total] = await Promise.all([
-            this.productModel.find({ vendor: vendorId })
+        const products = await this.productModel.find({ vendor: vendorId })
                 .populate('vendor', 'storeName email')
-                .skip((param.page - 1) * param.limit)
-                .limit(param.limit)
-                .lean(),
-            this.productModel.countDocuments({ vendor: vendorId })
-        ])
+                .skip((page - 1) * limit)
+                .limit(limit)
+                .lean()
+        
 
         // if no products found, throw an error
-        if (!products) throw new BadRequestException('No products found for the given query');
+        if (!products || products.length === 0) throw new BadRequestException('No products found for the given query');
 
-        await this.redisCache.hset(cacheKey, JSON.stringify(products), 'EX', CACHE_TTL)
+        await this.redisCache.set(cacheKey, JSON.stringify(products), 'EX', CACHE_TTL)
         // return the products
         return {
-            msg: 'Products fetched successfully',
+            msg: 'Products fetched successfully', 
             pagination: {
                 page,
                 limit,
-                total,
-                totalPages: Math.ceil(total / limit)
+                total: await this.productModel.countDocuments({ vendor: vendorId })
             },
             products
         }
@@ -147,24 +106,31 @@ export class ProductManagementService {
     }
 
 
-async updateProduct(updateProductDto: UpdateDTO){
-    const { productId } = updateProductDto
+async updateProduct(updateProductDto: UpdateDTO, images: Express.Multer.File[]){
+    const { productId, vendorId } = updateProductDto
 
-    // const isVendorId =  await this.vendorModel.findOne({ vendorId })
-    // if(!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
+    const isVendorId =  await this.vendorModel.findOne({ vendorId })
+    if(!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
 
+    const imageUpload = await Promise.all(
+            images.map(image => this.cloudinaryService.uploadFile(image, 'products', 'image'))
+        );    
     const product = await this.productModel.findOneAndUpdate(
         { productId },
-        { $set: updateProductDto },
+        { $set: updateProductDto, images: imageUpload.map(imag => imag.secure_url) },
         { new: true, runValidators: true }
     )
     if(!product) throw new NotFoundException('Product Not Found')
-
-    const newProduct = product    
+        
+    await this.notificationService.sendNewProductNotification({
+            name: product.name,
+            email: isVendorId.email,
+            vendorName: isVendorId.storeName
+        })    
 
     return {
         msg: 'product updated successfully',
-        newProduct
+        product
         
     }
 }  

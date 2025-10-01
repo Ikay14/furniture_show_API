@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsObject, IsString, ValidateNested, IsNumber } from "class-validator";
+import { IsObject, IsString, ValidateNested, IsArray } from "class-validator";
 import { ApiProperty } from '@nestjs/swagger';
 
 export class DimensionsDto {
@@ -40,6 +40,18 @@ export class ProductDTO {
   @ApiProperty({ example: '64b8c2f1e2a1c7a1f8e9d123', description: 'Vendor ID of the product' })
   @IsString()
   vendorId: string;
+
+  @ApiProperty({ example: ['red', 'green', 'brown'], description: 'Color options for the product' })
+  @IsArray()
+  @IsString({ each: true })
+  @Type(() => String)
+  colorOptions: string[];
+
+  @ApiProperty({ example: ["chair", "wooden", "furniture"], description: 'Tags of the products' })
+  @IsArray()
+  @IsString({ each: true })
+  @Type(() => String)
+  tags: string[];
 
   @ApiProperty({ type: DimensionsDto, description: 'Dimensions of the product' })
   @IsObject()

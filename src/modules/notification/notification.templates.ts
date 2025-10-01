@@ -14,5 +14,15 @@ export const notificationTemplates = {
     template: 'vendor',
     channels: ['EMAIL', 'APP'],
   },
+  PRODUCT_CREATED: {
+    subject: 'Product Created!',
+    template: 'productCreated',
+    channels: ['EMAIL', 'APP'],
+  },
+  PRODUCT_UPDATED: {
+    subject: 'Product Updated!',
+    template: 'productUpdated',
+    channels: ['EMAIL', 'APP'],
+  },
 };
 
