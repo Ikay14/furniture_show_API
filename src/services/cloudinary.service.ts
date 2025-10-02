@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { UploadApiResponse } from 'cloudinary';
 import * as toStream from 'buffer-to-stream';
 import { extractCloudinaryPublicId } from 'src/helpers/extract.cloudinary-url';
@@ -9,6 +9,8 @@ import { Buffer } from 'buffer';
 
 @Injectable()
 export class CloudinaryService {
+  private readonly logger = new Logger(CloudinaryService.name)
+
   constructor(private configService: ConfigService) {
     cloudinary.config({
       cloud_name: this.configService.get<string>('CLOUDINARY_CLOUD_NAME'),
@@ -35,7 +37,7 @@ export class CloudinaryService {
     throw new Error('File is undefined — did you forget to send it?');
   }
   if (!file.buffer) {
-    console.error('File received but no buffer:', file);
+    this.logger.warn('File received but no buffer:', file);
     throw new Error('File buffer missing — check Multer storage config');
   }
   

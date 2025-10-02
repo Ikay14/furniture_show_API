@@ -2,7 +2,6 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
-import { config } from 'dotenv';
 import { ConfigService } from '@nestjs/config';
 import { Model } from 'mongoose';
 import { User } from 'src/modules/user/model/user.model';
@@ -23,18 +22,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_SECRET') 
-    });
+    })
   }
 
   async validate(payload: any) {
-    const user = await this.userModel.findById(payload.sub);
-    if (!user) throw new UnauthorizedException('User not found');
+    const user = await this.userModel.findById(payload.sub)
+    if (!user) throw new UnauthorizedException('User not found')
 
-    let vendor: Vendor | null = null;
+    let vendor: Vendor | null = null
 
-     if (user.role === 'vendor') 
-      vendor = await this.vendorModel.findById(user._id).populate('vendor');
+    if (user.roles.includes('vendor')) {
+      vendor = await this.vendorModel.findOne({ owner: user._id })
     
-    return { user, vendor };
+    return { user, vendor }
+  }
 }
-}
+  }

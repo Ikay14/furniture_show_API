@@ -11,7 +11,7 @@ export type UserDocument = User & Document & {
 @Schema({ timestamps: true })
 export class User extends Document {
   
-   @Prop({
+  @Prop({
         type: String,
         default: uuidv4,
         required: true,
@@ -19,28 +19,40 @@ export class User extends Document {
       })
      userId: string;
      
-    @Prop({ 
+  @Prop({ 
       type: String,
         required: true,
         unique: true,
         index: true,
         trim: true,
     })
-    email: string;
+  email: string;
 
-    @Prop()
+  @Prop()
     firstName?: string;
 
-    @Prop()
+  @Prop()
     lastName?: string;
 
-    @Prop()
+  @Prop()
+    phone: number
+
+  @Prop()
+    address: string
+
+  @Prop({
+      type: String,
+      enum: ["male",'female'], 
+    })
+    gender: string
+
+  @Prop()
     picture?: string;
 
-    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' })
     vendor?: Vendor
 
-    @Prop({
+  @Prop({
       type: String,
         minlength: 6,
     })
@@ -48,11 +60,11 @@ export class User extends Document {
 
   @Prop({
       type: String,
-      enum: ["user", "admin"], 
+      enum: ["user",'vendor', "admin"], 
       default: "user", 
     
   })
-  role: string;
+  roles: string[]
   
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Cart' }] })
   carts: Types.ObjectId[]

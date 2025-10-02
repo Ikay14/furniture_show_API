@@ -3,12 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Product } from './model/product.model';
 import { Model } from 'mongoose';
 import { Category } from '../admin/model/category.model';
-
-export interface filterList {
-    name?: string,
-    price?: number,
-    category?: string
-}
+import { FilterListDto } from './DTO/product-query.dto';
 
 
 export class ProductService {
@@ -17,18 +12,31 @@ export class ProductService {
         @InjectModel(Category.name) private categoryModel: Model<Category>
     ) {}
 
-    async getAllProducts(page: number, limit: number, filterBy: filterList) {
+    async getAllProducts(page: number, limit: number, filterBy: FilterListDto = {}) {
 
             const filter: any = {}
 
-            if(filterBy.name) filter['name'] = filterBy.name
-            if(filterBy.price) filter['price'] = filterBy.price
-            if(filterBy.category) filter['category'] = filterBy.category
+            if(filterBy.name) {
+                filter['name'] = { $regex: filterBy.name, $options: 'i' }
+            }
+
+            if (filterBy.minPrice || filterBy.maxPrice) {
+                filter['price'] = {}
+                if (filterBy.minPrice) filter['price'].$gte = filterBy.minPrice;
+                if (filterBy.maxPrice) filter['price'].$lte = filterBy.maxPrice;
+            }
+
+            // Category filter (ObjectId)
+            if (filterBy.category) {
+              filter['category'] = filterBy.category
+            }
+
             
             const products = await this.productModel
                 .find(filter)
                 .skip((page - 1) * limit)
                 .limit(limit)
+                .populate('category')
                 .lean()
     
             // if no products found, throw an error
@@ -42,13 +50,13 @@ export class ProductService {
                  pagination: {
                     page,
                     limit,
-                    total: await this.productModel.countDocuments({ filter }),
+                    total: await this.productModel.countDocuments(filter),
                 },
             }
 }
 
         async getAProduct(productId: string):Promise<{msg: string, product: Product}>{
-            const product = await this.productModel.findOne({ productId })
+            const product = await this.productModel.findById(productId)
             .populate('category', 'name')
     
             if(!product || product.inStock === 0) throw new NotFoundException('Product Found')

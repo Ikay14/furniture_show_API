@@ -5,9 +5,9 @@ import { FilesInterceptor } from "@nestjs/platform-express";
 import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { JwtAuthGuard } from "src/guards/jwt.guard";
 import { Roles } from "src/decorators/roles.decorator";
-import { RolesGuard } from "src/guards/roles.guard";
 import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { GetUser } from "src/decorators/user.decorator";
+import { DeleteProductDTO } from "src/modules/product/DTO/delete-product.dto";
 
 @ApiTags('Vendor Product Management')
 @Controller('vendor-product-mgt')
@@ -73,13 +73,12 @@ export class ProductManagementController {
         return this.productService.updateProduct(update, images)
     }
 
-    @Delete(':id/delete-product')
+    @Patch('delete-product')
     @ApiOperation({ summary: 'Delete a product by its ID' })
     @ApiParam({ name: 'id', type: String, description: 'Product ID' })
     @ApiResponse({ status: 200, description: 'Product deleted successfully' })
     async deleteProduct(
-        @Param('id') id: string,
-        @GetUser('vendorId') vendorId: string,){
-        return this.productService.deleteProduct(id, vendorId)
+        @Body() dto: DeleteProductDTO){
+        return this.productService.deleteProduct(dto)
     }
-}
+} 

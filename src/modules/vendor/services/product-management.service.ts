@@ -10,6 +10,7 @@ import { NotificationService } from "src/modules/notification/notifcation.servic
 import Redis from "ioredis";
 import { CACHE_TTL } from "src/config/db.config";
 import { InjectRedis } from "@nestjs-modules/ioredis";
+import { DeleteProductDTO } from "src/modules/product/DTO/delete-product.dto";
 
 
 @Injectable()
@@ -61,8 +62,7 @@ export class ProductManagementService {
 
     async getAllVendorProducts(
         vendorId: string, page: number, limit: number ) {
-        console.log(vendorId);
-
+        
         const cacheKey = `vendor-products:${page}:${limit}` 
         const cachedvenProducts = await this.redisCache.get(cacheKey)
         if(cachedvenProducts) return JSON.parse(cachedvenProducts)
@@ -71,8 +71,9 @@ export class ProductManagementService {
         if(!isVendor) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
         this.logger.log(`Fetching products for vendorId: ${vendorId}, page: ${page}, limit: ${limit}`);
 
-        const products = await this.productModel.find({ vendor: vendorId })
+        const products = await this.productModel.find({ vendor: vendorId, isDeleted: false })
                 .populate('vendor', 'storeName email')
+                .populate('category')
                 .skip((page - 1) * limit)
                 .limit(limit)
                 .lean()
@@ -95,7 +96,9 @@ export class ProductManagementService {
     }
 
     async getAProduct(productId: string):Promise<{msg: string, product: Product}>{
-        const product = await this.productModel.findOne({ productId })
+        const product = await this.productModel.findOne({ productId, isDeleted: false })
+         .populate('category')
+         .populate('vendor', 'storeName email')
 
         if(!product || product.inStock === 0) throw new NotFoundException('Product Found')
 
@@ -109,8 +112,8 @@ export class ProductManagementService {
 async updateProduct(updateProductDto: UpdateDTO, images: Express.Multer.File[]){
     const { productId, vendorId } = updateProductDto
 
-    const isVendorId =  await this.vendorModel.findOne({ vendorId })
-    if(!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
+    const isVendor =  await this.vendorModel.findById(vendorId)
+    if(!isVendor) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
 
     const imageUpload = await Promise.all(
             images.map(image => this.cloudinaryService.uploadFile(image, 'products', 'image'))
@@ -124,8 +127,8 @@ async updateProduct(updateProductDto: UpdateDTO, images: Express.Multer.File[]){
         
     await this.notificationService.sendNewProductNotification({
             name: product.name,
-            email: isVendorId.email,
-            vendorName: isVendorId.storeName
+            email: isVendor.email,
+            vendorName: isVendor.storeName
         })    
 
     return {
@@ -135,9 +138,12 @@ async updateProduct(updateProductDto: UpdateDTO, images: Express.Multer.File[]){
     }
 }  
 
-async deleteProduct(productId: string, vendorId: string ): Promise<{ msg: string; deletedProduct: Product }> {
-    const isVendorId = await this.vendorModel.findOne({ vendorId })
-    if (!isVendorId) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
+async deleteProduct(dto: DeleteProductDTO ): Promise<{ msg: string }> {
+
+    const { productId, vendorId } = dto
+
+    const isVendor = await this.vendorModel.findById(vendorId)
+    if (!isVendor) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
 
     const deletedProduct = await this.productModel.findOneAndUpdate(
         { productId },
@@ -147,8 +153,7 @@ async deleteProduct(productId: string, vendorId: string ): Promise<{ msg: string
     if (!deletedProduct) throw new NotFoundException('Product Not Found')
 
     return {
-        msg: 'Product deleted successfully',
-        deletedProduct
+        msg: 'Product deleted successfully'
     }
 }
 

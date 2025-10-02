@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
+import { Vendor } from '../vendor/model/vendor.model';
 import { GenerateOTP } from 'src/utils/generate.otp';
 import { LoginDTO } from '../user/DTO/login.user.dto';
 import { ValidateDTO } from '../user/DTO/otp.validate.dto';
@@ -20,6 +21,7 @@ export class AuthService {
     private logger = new Logger(AuthService.name)
     constructor (
         @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+        @InjectModel(Vendor.name) private readonly vendorModel: Model<Vendor>,
         private configService: ConfigService,
         private jwtService: JwtService,
         private mailService: MailService,
@@ -121,8 +123,7 @@ export class AuthService {
 
         const isMatch = await bcrypt.compare(password, user.password)
         if (!isMatch) throw new BadRequestException(`Invalid credentials provided`);
-
-
+ 
         const accessToken = await this.generateAccessToken(user)
 
         return {
@@ -198,10 +199,15 @@ export class AuthService {
 
    
     private async generateAccessToken(user: User){
+
+        const vendor = await this.vendorModel.findOne({ owner: user._id })
+        
         const payload = {
+            
             id: user._id,
             email: user.email,
-            role: user.role
+            role: user.roles,
+            vendorId: vendor ? vendor._id : null
         }
 
         return this.jwtService.sign(payload, {

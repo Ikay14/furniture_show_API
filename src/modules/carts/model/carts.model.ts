@@ -11,7 +11,6 @@ export class Cart extends Document
       type: String,
       default: uuidv4,
       required: true,
-      unique: true
     })
    cartId: string;
 

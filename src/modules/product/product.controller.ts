@@ -1,7 +1,7 @@
 import { Controller, Post, UseInterceptors, Req, Body, Patch, Get, Param, Query, Delete } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { ApiTags, ApiOperation, ApiQuery, ApiParam, ApiResponse } from '@nestjs/swagger';
-import { filterList } from './product.service'
+import { FilterListDto } from './DTO/product-query.dto';
 
 
 @ApiTags('Products')
@@ -19,7 +19,7 @@ export class ProductController {
     async getAllProducts(
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '10',
-        @Query('filter') filter: filterList  
+        @Query() filter: FilterListDto 
     ){
         const pageNum = Math.max(Number(page), 1);
         const limitNum = Math.max(Number(limit), 1);

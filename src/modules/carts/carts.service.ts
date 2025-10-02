@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Cart } from './model/carts.model';
@@ -9,6 +9,7 @@ import { CreateCartDto } from './dto/add.cart.dto';
 
 @Injectable()
 export class CartsService {
+  private readonly logger = new Logger(CartsService.name)
   constructor(
     @InjectModel(Cart.name) private cartModel: Model<Cart>,
     @InjectModel(Product.name) private productModel: Model<Product>,
@@ -38,10 +39,11 @@ async createCart(createCartDto: CreateCartDto, userId: string): Promise<{ msg: s
   // compute totalPrice by matching each db product to the requested quantity
   let totalPrice = 0;
   const cartProducts = dbProducts.map(dbp => {
-    const requested = products.find(p => p.productId === dbp._id.toString());
-    const quantity = Math.max(1, (requested?.quantity ?? 1));
-    const price = Number(dbp.price ?? 0)
-    totalPrice += price * quantity;
+    const requested = products.find(p => p.productId === dbp._id.toString())
+    if(!requested) return
+    const quantity = Math.max(1, (requested.quantity))
+    const price = Number(dbp.price)
+    totalPrice += price * quantity
     
     return {
       product: dbp._id,
@@ -64,7 +66,7 @@ async createCart(createCartDto: CreateCartDto, userId: string): Promise<{ msg: s
 
 
 
-    async getUserCart(userId: string): Promise<{ msg: string, carts: Cart[] }> {
+        async getUserCart(userId: string): Promise<{ msg: string, carts: Cart[] }> {
 
         const userCarts = await this.cartModel.find({ user: userId })
 
