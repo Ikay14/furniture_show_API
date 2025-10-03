@@ -4,7 +4,8 @@ export type NotificationType =
   | 'WELCOME_EMAIL'
   | 'FORGOT_PASSWORD'
   | 'PRODUCT_CREATED' 
-  | 'VENDOR_APPROVAL';
+  | 'VENDOR_APPROVAL'
+  | 'REQUEST_OTP';
 
 export interface NotificationPayload {
   type: NotificationType;

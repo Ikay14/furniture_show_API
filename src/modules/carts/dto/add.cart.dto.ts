@@ -1,20 +1,12 @@
-import { IsNumber, Min, ValidateNested, IsArray, IsNotEmpty } from "class-validator";
+import { IsString, IsNumber, Min, IsMongoId } from 'class-validator';
 import { Type } from 'class-transformer';
-import { IsMongoId } from 'class-validator';
 
-class ProductInCartDto {
+export class CreateCartDto {
   @IsMongoId()
   productId: string;
 
   @IsNumber()
   @Min(1)
+  @Type(() => Number)
   quantity: number;
-}
-
-
-export class CreateCartDto {
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ProductInCartDto)
-  products: ProductInCartDto[]
 }

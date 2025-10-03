@@ -4,6 +4,7 @@ import { User } from './model/user.model';
 import { Model } from 'mongoose';
 import { UpdateUserProfile } from './DTO/update-user.dto';
 import { CloudinaryService } from 'src/services/cloudinary.service';
+import { toUserEntity, UserEntity } from './DTO/user-entity.dto';
 
 @Injectable()
 export class UserService {
@@ -13,19 +14,20 @@ export class UserService {
         @InjectModel(User.name) private readonly userModel: Model<User>
     ){}
 
-    async getUser(userId: string){
-        return await this.userModel.findOne({ userId })
+    async getUser(userId: string):Promise<{user: UserEntity}>{
+        const user = await this.userModel.findById( userId ).lean()
+        if(!user) throw new NotFoundException(`${userId} not found`)
+
+        return {user: toUserEntity(user) }   
     }
+        
+    
 
-    async updateUserProfile(updateDto: UpdateUserProfile, file: Express.Multer.File){
-        const { userId } = updateDto
+    async updateUserProfile(userId: string, updateDto: UpdateUserProfile):Promise<{msg: string, user: UserEntity }>{
 
-        const uploadAvatar = await this.cloudinaryService.uploadFile(file, 'user', 'image' )
-        if (!uploadAvatar) this.logger.log(`upload failed, retry`)
-
-        const user = await this.userModel.findOneAndUpdate(
-            { userId },
-            { $set: updateDto, picture: uploadAvatar },
+        const user = await this.userModel.findByIdAndUpdate(
+             userId,
+            { $set: updateDto },
             { runValidators: true, new: true }
         )
 
@@ -33,8 +35,23 @@ export class UserService {
 
         return {
             msg: 'user update successfully',
-            user
+            user: toUserEntity(user)
         }    
+    }
+
+    async uploadAvatar(userId: string, file: Express.Multer.File): Promise<{ user: UserEntity}>{
+
+        const user = await this.userModel.findById(userId)
+        if(!user) throw new NotFoundException(`${userId} not found`)
+
+        const uploadAvatar = await this.cloudinaryService.uploadFile(file, 'user', 'image' )
+        if (!uploadAvatar) this.logger.log(`upload failed, retry`)
+
+        user.avatar = uploadAvatar.secure_url;
+
+        await user.save()    
+
+        return { user: toUserEntity(user) }
     }
 
     async deleteUser(userId:string){

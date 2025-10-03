@@ -1,26 +1,31 @@
 import { PartialType } from "@nestjs/mapped-types";
 import { RegisterDto } from "./register.user.dto";
-import { IsPhoneNumber, IsString } from "class-validator";
+import { IsOptional, IsPhoneNumber, IsString } from "class-validator";
 
 export class UpdateUserProfile extends PartialType(RegisterDto){
-    @IsString()
-    userId: string
 
     @IsString()
+    @IsOptional()
     gender?: string
 
     @IsPhoneNumber()
+    @IsOptional()
     phone?: number 
 
     @IsString()
+    @IsOptional()
+    dob?: string 
+
+    @IsString()
+    @IsOptional()
     firstName?: string 
 
     @IsString()
+    @IsOptional()
     lastName?: string 
 
     @IsString()
+    @IsOptional()
     address?: string 
 
-    @IsString()
-    picture?: string
 }

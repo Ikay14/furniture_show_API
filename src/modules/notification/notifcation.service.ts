@@ -17,6 +17,16 @@ export class NotificationService {
     }, { delay: 5000, priority: 5 }) 
   }
 
+    async sendOTP(user: { email: string; firstName?: string; otp: string }) {
+        await this.eventQueue.sendNotification('REQUEST_OTP', {
+        type: 'REQUEST_OTP',
+        to: user.email,
+        subject: `You requested a One-Time Password`,
+        data: { name: user.firstName, otp: user.otp },
+        channel: ['EMAIL'],
+    }, { delay: 5000, priority: 3 }) 
+  }
+
     async sendForgotPassword(user: { email: string; otp: string }) {
         await this.eventQueue.sendNotification('FORGoT_PASSWORD', {
         type: 'FORGOT_PASSWORD',

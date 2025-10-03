@@ -1,4 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Matches } from "class-validator";
 import mongoose, { Document, Types } from "mongoose";
 import { Vendor } from "src/modules/vendor/model/vendor.model";
 import { v4 as uuidv4 } from 'uuid';
@@ -44,10 +45,15 @@ export class User extends Document {
       type: String,
       enum: ["male",'female'], 
     })
-    gender: string
+  gender: string
+  
+  @Prop({ type: String })
+  @Matches(/^\d{4}\/\d{2}\/\d{2}$/, { message: 'DOB must be in YYYY/MM/DD format' })
+  dob: string;
+
 
   @Prop()
-    picture?: string;
+  avatar?: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' })
     vendor?: Vendor

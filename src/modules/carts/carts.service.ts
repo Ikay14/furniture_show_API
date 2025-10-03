@@ -1,92 +1,210 @@
-import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Cart } from './model/carts.model';
-import { User } from '../user/model/user.model';
-import { Product } from '../product/model/product.model';
-import { CreateCartDto } from './dto/add.cart.dto';
-
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model, Types } from "mongoose";
+import { Cart, CartDocument, CartItemPopulated, CartPopulatedDocument } from "./model/carts.model";
+import { Product } from "../product/model/product.model";
+import { CreateCartDto } from "./dto/add.cart.dto";
+import { Vendor } from "../vendor/model/vendor.model";
 
 @Injectable()
-export class CartsService {
-  private readonly logger = new Logger(CartsService.name)
+export class CartService {
   constructor(
-    @InjectModel(Cart.name) private cartModel: Model<Cart>,
-    @InjectModel(Product.name) private productModel: Model<Product>,
-    @InjectModel(User.name) private userModel: Model<User>
-) {}
+    @InjectModel(Cart.name) private readonly cartModel: Model<Cart>,
+    @InjectModel('Product') private readonly productModel: Model<Product>,
+  ) {}
 
-async createCart(createCartDto: CreateCartDto, userId: string): Promise<{ msg: string; cart: Cart }> {
-  const { products } = createCartDto; // products: [{ productId, quantity }, ...]
-  if (!products || products.length === 0) {
-    throw new BadRequestException('Cart must contain at least one product');
-  }
+  async addToCart(userId: string, dto: CreateCartDto) {
+    const { productId, quantity } = dto;
 
-  // build ObjectId list
-  const productIds = products.map(p => new Types.ObjectId(p.productId));
+    // Get product with vendor
+    const product = await this.findProductWithVendor(productId);
+   
+    //  Get or create cart (unpopulated)
+    const cart = await this.getOrCreateCart(userId);
 
-  // ensure user exists
-  const user = await this.userModel.findById(userId);
-  if (!user) throw new NotFoundException(`User with id ${userId} not found`);
+    // Update cart items
+    const existingItem = cart.items.find(
+      (item) => item.product.toString() === productId,
+    );
 
-  // get product documents for the requested productIDs
-  const dbProducts = await this.productModel.find({ _id: { $in: productIds } }).lean();
-  if (dbProducts.length !== productIds.length) {
-    // some product IDs were not found
-    throw new NotFoundException('One or more products not found');
-  }
-
-  // compute totalPrice by matching each db product to the requested quantity
-  let totalPrice = 0;
-  const cartProducts = dbProducts.map(dbp => {
-    const requested = products.find(p => p.productId === dbp._id.toString())
-    if(!requested) return
-    const quantity = Math.max(1, (requested.quantity))
-    const price = Number(dbp.price)
-    totalPrice += price * quantity
-    
-    return {
-      product: dbp._id,
-      quantity,
-      price
-    };
-  });
-
-  const cart = await this.cartModel.create({
-    products: cartProducts,
-    user: userId,
-    totalPrice,
-  });
-
-  return {
-    msg: 'Cart created successfully',
-    cart,
-  };
-}
-
-
-
-        async getUserCart(userId: string): Promise<{ msg: string, carts: Cart[] }> {
-
-        const userCarts = await this.cartModel.find({ user: userId })
-
-        if (!userCarts || userCarts.length === 0) throw new NotFoundException(`No carts found for user with id ${userId}`);
-
-        return {
-            msg: 'User carts fetched successfully',
-            carts: userCarts
-        };
+    if (existingItem) {
+      existingItem.quantity += quantity;
+    } else {
+      cart.items.push({
+        product: new Types.ObjectId(productId),
+        vendor: new Types.ObjectId(product.vendor.id),
+        quantity,
+      });
     }
 
+    // Save cart
+    await cart.save()
 
-    async removeCart(cartId:string, userId: string): Promise<{ msg: string }> {
+    // Return cart with calculated total
+    return this.calculateCart(cart.id)
+  }
 
-        const cart = await this.cartModel.findOneAndDelete({ _id: cartId, user: userId });
+  // Helper: Find product with vendor
+  private async findProductWithVendor(productId: string) {
+    const product = await this.productModel
+      .findById(productId)
+      .populate('vendor')
+      .lean()
 
-        if (!cart) throw new NotFoundException(`Cart with id ${cartId} not found for user with id ${userId}`)
-
-        if (cart.isPurchased) throw new NotFoundException(`Cart with id ${cartId} has already been purchased and cannot be deleted`)   
-
-        return { msg: 'Cart removed successfully' };
+    if (!product) {
+      throw new NotFoundException('Product not found');
     }
+
+    if (!product.vendor) {
+      throw new NotFoundException('Product vendor not found');
+    }
+
+    return product as Product
+  }
+
+  // Helper: Get or create cart
+  private async getOrCreateCart(userId: string) {
+    let cart = await this.cartModel.findOne({
+      user: userId,
+      isPurchased: false,
+      isActive: true,
+    });
+
+    if (!cart) {
+      cart = new this.cartModel({
+        user: userId,
+        items: [],
+        isActive: true,
+      });
+    }
+
+    return cart;
+  }
+
+  
+  // Helper: cart with total price
+  private async calculateCart(cartId: string) {
+    const cart = await this.cartModel
+      .findById(cartId)
+      .populate({
+        path: 'items.product',
+        select: 'name price images description stock',
+      })
+      .populate({
+        path: 'items.vendor',
+        select: 'name email phone',
+      })
+      .lean();
+
+    if (!cart) {
+      throw new NotFoundException('Cart not found');
+    }
+
+    // Calculate total price
+    if (cart) {
+      cart.totalPrice = cart.items.reduce((total, item) => {
+        const product = item.product as Product
+        return total + (product.price * item.quantity);
+      }, 0)
+    }
+
+    // Update total in database
+    await this.cartModel.findByIdAndUpdate(cartId, {
+      totalPrice: cart.totalPrice,
+    });
+
+    return cart;
+  }
+
+  // Additional cart operations
+  async updateCartItemQuantity(
+    userId: string,
+    productId: string,
+    quantity: number
+  ) {
+    const cart = await this.cartModel.findOne({
+      user: userId,
+      isPurchased: false,
+      isActive: true,
+    });
+
+    if (!cart) {
+      throw new NotFoundException('Cart not found');
+    }
+
+    const itemIndex = cart.items.findIndex(
+      (item) => item.product.toString() === productId
+    );
+
+    if (itemIndex === -1) {
+      throw new NotFoundException('Product not found in cart');
+    }
+
+    if (quantity <= 0) {
+      // Remove item if quantity is 0 or negative
+      cart.items.splice(itemIndex, 1);
+    } else {
+      // Update quantity
+      cart.items[itemIndex].quantity = quantity;
+    }
+
+    await cart.save();
+
+    return cart
+  }
+
+  async removeFromCart(userId: string, productId: string): Promise<CartPopulatedDocument> {
+    const cart = await this.cartModel.findOne({
+      user: userId,
+      isPurchased: false,
+      isActive: true,
+    });
+
+    if (!cart) {
+      throw new NotFoundException('Cart not found');
+    }
+
+    // Filter out the item
+    cart.items = cart.items.filter(
+      (item) => item.product.toString() !== productId
+    );
+
+    await cart.save();
+
+    return cart
+  }
+
+  async clearCart(userId: string): Promise<void> {
+    await this.cartModel.findOneAndUpdate(
+      { user: userId, isPurchased: false },
+      { items: [], totalPrice: 0 }
+    );
+  }
+
+  async getCart(userId: string) {
+    const cart = await this.cartModel
+      .findOne({
+        user: userId,
+        isPurchased: false,
+        isActive: true,
+      })
+      .populate({
+        path: 'items.product',
+        select: 'name price images description stock',
+      })
+      .populate({
+        path: 'items.vendor',
+        select: 'name email',
+      })
+      .lean()
+
+    if (cart) {
+      cart.totalPrice = cart.items.reduce((total, item) => {
+        const product = item.product as Product;
+        return total + (product.price * item.quantity);
+      }, 0);
+    }
+
+    return cart;
+  }
 }

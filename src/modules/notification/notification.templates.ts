@@ -24,5 +24,10 @@ export const notificationTemplates = {
     template: 'productUpdated',
     channels: ['EMAIL', 'APP'],
   },
+  REQUEST_OTP: {
+    subject: 'OTP Request!',
+    template: 'request.otp',
+    channels: ['EMAIL', 'APP'],
+  },
 };
 

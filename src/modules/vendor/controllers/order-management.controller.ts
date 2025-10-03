@@ -1,10 +1,14 @@
-import { Controller, Get, Query } from "@nestjs/common";
+import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { OrderManagementService } from "../services/order.management.service";
 import { OrderStatus } from "src/modules/orders/model/order.model";
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { JwtAuthGuard } from "src/guards/jwt.guard";
+import { Roles } from "src/decorators/roles.decorator";
 
 @ApiTags('vendor Orders Management')
 @Controller('vendor-orders-mgt')
+@UseGuards(JwtAuthGuard)
+@Roles('vendor')
 export class OrderManagementController {
     constructor(
         private orderManagementService: OrderManagementService

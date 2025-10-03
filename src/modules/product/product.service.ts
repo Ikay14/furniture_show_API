@@ -69,14 +69,15 @@ export class ProductService {
 
     async getProductByCategory(categoryId: string, page: number, limit: number): Promise<{ msg: string; products: Product[], total: number; limit: number; page: number }> {
 
-        const products = await this.productModel.find({ category: categoryId })
+        const [products, total ] = await Promise.all([ 
+        this.productModel.find({ category: categoryId })
         .populate('category', 'name')
         .skip((page - 1) * limit)
         .limit(limit)
-        .sort({ createdAt: -1 })
+        .sort({ createdAt: -1 }),
 
-        const total = await this.productModel.countDocuments({ category: categoryId })
-        
+         this.productModel.countDocuments({ category: categoryId })
+        ])
         if(!products || products.length === 0) throw new NotFoundException('No products found for this category')
 
         return {

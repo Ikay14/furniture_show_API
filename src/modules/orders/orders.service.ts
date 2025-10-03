@@ -44,16 +44,16 @@ export class OrdersService {
       
 
       // Check stock levels
-        for (const item of cart.products) {
+        for (const item of cart.items) {
         const product = foundProducts.find(p => p.id.equals(item.productId));
         if (!product || product.inStock < item.quantity) throw new BadRequestException(`Product ${product?.name || item.productId} is out of stock`);
 
         }
 
       // Reduce stock
-        for (const item of cart.products) {
+        for (const item of cart.items) {
         await this.productModel.updateOne(
-            { _id: item.productId },
+            { _id: item.pr },
             { $inc: { inStock: -item.quantity } },
             { session }
         )

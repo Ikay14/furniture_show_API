@@ -46,7 +46,7 @@ export class UserManagementService {
             email: user.email,
             name: user.firstName + ' ' + user.lastName,
             isVerified: user.isVerified,
-            dp: user.picture,
+            dp: user.avatar,
         }))
 
         await this.redisCache.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL);

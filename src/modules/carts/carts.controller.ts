@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, Req, Delete } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Req, Delete, UseGuards } from '@nestjs/common';
 import { CartsService } from './carts.service';
 import { CreateCartDto } from './dto/add.cart.dto';
 import {
@@ -9,10 +9,15 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/guards/jwt.guard';
+import { GetUser } from 'src/decorators/user.decorator';
+
+
 
 @ApiTags('Carts') // Groups all cart-related endpoints
 @ApiBearerAuth() // Indicates JWT authentication required
 @Controller('carts')
+@UseGuards(JwtAuthGuard)
 export class CartsController {
   constructor(private readonly cartsService: CartsService) {}
 
@@ -40,13 +45,12 @@ export class CartsController {
   })
   async createCart(
     @Body() createCartDto: CreateCartDto,
-    @Req() req,
+    @GetUser('id') userId: string
   ) {
-    const userId = req.user.id;
     return this.cartsService.createCart(createCartDto, userId);
   }
 
-  @Get(':userId')
+  @Get('me')
   @ApiOperation({
     summary: 'Get user cart',
     description: 'Retrieves the shopping cart for a specific user',
@@ -67,15 +71,15 @@ export class CartsController {
     description: 'User or cart not found',
   })
   async getUserCart(
-    @Param('userId') userId: string,
+    @GetUser('id') userId: string,
   ) {
-    return this.cartsService.getUserCart(userId);
+    return this.cartsService.getUserCart(userId)
   }
 
   @Delete('remove-cart')
   async deleteUserCart(
-    @Body('userId') userId: string,
-    @Body('cartId') cartId: string,
+    @GetUser('id') userId:string,
+    @Param('cartId') cartId: string
   ) {
     return this.cartsService.removeCart(userId, cartId);
   }

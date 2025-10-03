@@ -21,8 +21,6 @@ export class AuthService {
     private logger = new Logger(AuthService.name)
     constructor (
         @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-        @InjectModel(Vendor.name) private readonly vendorModel: Model<Vendor>,
-        private configService: ConfigService,
         private jwtService: JwtService,
         private mailService: MailService,
         private notifyService: NotificationService
@@ -169,15 +167,14 @@ export class AuthService {
     user.otp = await bcrypt.hash(otp, 10);
 
     user.otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-
-    await this.sendEmail(
-            user.email, 
-            `You requested a One-Time Password (OTP)`, 
-            'request.otp', 
-            { name: user.firstName || 'User', email: user.email, otp } 
-        )  
-
+    
     await user.save()
+    
+         await this.notifyService.sendOTP({
+            email: user.email,
+            firstName: user.firstName,
+            otp
+           })
 
     // 6. Return response with message and OTP
     return {
@@ -199,15 +196,12 @@ export class AuthService {
 
    
     private async generateAccessToken(user: User){
-
-        const vendor = await this.vendorModel.findOne({ owner: user._id })
         
         const payload = {
             
             id: user._id,
             email: user.email,
             role: user.roles,
-            vendorId: vendor ? vendor._id : null
         }
 
         return this.jwtService.sign(payload, {
@@ -217,9 +211,9 @@ export class AuthService {
     }
 
 
-         // sendMail method
-    private async sendEmail(to: string, subject: string, templateName: string, data: Record<string, string> ): Promise<void> {
-    await this.mailService.sendMailWithTemplate(to, subject, templateName, data);
-    }
+    //      // sendMail method
+    // private async sendEmail(to: string, subject: string, templateName: string, data: Record<string, string> ): Promise<void> {
+    // await this.mailService.sendMailWithTemplate(to, subject, templateName, data);
+    // }
 
 }

@@ -1,6 +1,8 @@
 import { Schema, SchemaFactory, Prop } from "@nestjs/mongoose";
-import { Document, Types } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
 import shortUUID from "short-uuid";
+import { Product } from "src/modules/product/model/product.model";
+import { Vendor } from "src/modules/vendor/model/vendor.model";
 
 export enum OrderStatus {
   PENDING = 'pending',
@@ -24,8 +26,16 @@ export class Order extends Document {
     @Prop({ ref: 'User', type: Types.ObjectId })
     user: Types.ObjectId;
 
-    @Prop({ type: [{ productId: { type: Types.ObjectId, ref: 'Product' }, quantity: { type: Number, default: 1 } }] })
-    products: { productId: Types.ObjectId; quantity: number }[]
+  @Prop([{
+    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
+    quantity: { type: Number, required: true, default: 1 }
+  }])
+  items: {
+    product: Product;
+    vendor: Vendor;
+    quantity: number;
+  }[]
 
     @Prop({ type: Number, default: 0 })
     totalPrice: number;               
