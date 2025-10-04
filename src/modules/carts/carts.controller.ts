@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Param, Body, Req, Delete, UseGuards } from '@nestjs/common';
-import { CartsService } from './carts.service';
+import { CartService } from './carts.service';
 import { CreateCartDto } from './dto/add.cart.dto';
 import {
   ApiTags,
@@ -19,7 +19,7 @@ import { GetUser } from 'src/decorators/user.decorator';
 @Controller('carts')
 @UseGuards(JwtAuthGuard)
 export class CartsController {
-  constructor(private readonly cartsService: CartsService) {}
+  constructor(private readonly cartsService: CartService) {}
 
   @Post()
   @ApiOperation({
@@ -47,7 +47,7 @@ export class CartsController {
     @Body() createCartDto: CreateCartDto,
     @GetUser('id') userId: string
   ) {
-    return this.cartsService.createCart(createCartDto, userId);
+    return this.cartsService.addToCart(userId, createCartDto);
   }
 
   @Get('me')
@@ -73,14 +73,22 @@ export class CartsController {
   async getUserCart(
     @GetUser('id') userId: string,
   ) {
-    return this.cartsService.getUserCart(userId)
+    return this.cartsService.getCart(userId)
   }
 
   @Delete('remove-cart')
   async deleteUserCart(
     @GetUser('id') userId:string,
-    @Param('cartId') cartId: string
+    @Param('cartId') productId: string
   ) {
-    return this.cartsService.removeCart(userId, cartId);
+    return this.cartsService.removeFromCart(userId, productId);
+  }
+
+  @Delete('clear-cart')
+  async clearCart(
+    @GetUser('id') userId:string,
+    @Param('cartId') productId: string
+  ) {
+    return this.cartsService.clearCart(userId)
   }
 }

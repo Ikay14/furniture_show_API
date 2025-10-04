@@ -63,6 +63,3 @@ export const CartSchema = SchemaFactory.createForClass(Cart);
 
 
 export type CartDocument = HydratedDocument<Cart>;
-// export type CartPopulatedDocument = Omit<CartDocument, 'items'> & {
-//   items: CartItemPopulated[];
-// };

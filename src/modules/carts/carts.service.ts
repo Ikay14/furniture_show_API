@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
-import { Cart, CartDocument, CartItemPopulated, CartPopulatedDocument } from "./model/carts.model";
+import { Cart, CartDocument } from "./model/carts.model";
 import { Product } from "../product/model/product.model";
 import { CreateCartDto } from "./dto/add.cart.dto";
 import { Vendor } from "../vendor/model/vendor.model";
@@ -17,7 +17,7 @@ export class CartService {
     const { productId, quantity } = dto;
 
     // Get product with vendor
-    const product = await this.findProductWithVendor(productId);
+    const product = await this.findProductWithVendor(productId)
    
     //  Get or create cart (unpopulated)
     const cart = await this.getOrCreateCart(userId);
@@ -32,16 +32,18 @@ export class CartService {
     } else {
       cart.items.push({
         product: new Types.ObjectId(productId),
-        vendor: new Types.ObjectId(product.vendor.id),
+        vendor: product.vendor.id,
         quantity,
       });
     }
+
+    this.calculateCart(cart.id)
 
     // Save cart
     await cart.save()
 
     // Return cart with calculated total
-    return this.calculateCart(cart.id)
+  
   }
 
   // Helper: Find product with vendor
@@ -49,7 +51,7 @@ export class CartService {
     const product = await this.productModel
       .findById(productId)
       .populate('vendor')
-      .lean()
+
 
     if (!product) {
       throw new NotFoundException('Product not found');
@@ -86,20 +88,9 @@ export class CartService {
   private async calculateCart(cartId: string) {
     const cart = await this.cartModel
       .findById(cartId)
-      .populate({
-        path: 'items.product',
-        select: 'name price images description stock',
-      })
-      .populate({
-        path: 'items.vendor',
-        select: 'name email phone',
-      })
-      .lean();
-
     if (!cart) {
-      throw new NotFoundException('Cart not found');
+      throw new NotFoundException('cart not found')
     }
-
     // Calculate total price
     if (cart) {
       cart.totalPrice = cart.items.reduce((total, item) => {
@@ -153,7 +144,7 @@ export class CartService {
     return cart
   }
 
-  async removeFromCart(userId: string, productId: string): Promise<CartPopulatedDocument> {
+  async removeFromCart(userId: string, productId: string) {
     const cart = await this.cartModel.findOne({
       user: userId,
       isPurchased: false,
