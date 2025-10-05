@@ -16,60 +16,73 @@ export class PaymentService {
     @InjectModel(Order.name) private readonly orderModel: Model<Order>,
   ) {}
 
-  async initializePayment(paymentData:PaymentDTO ) {
+  async initializePayment(paymentData: PaymentDTO) {
+  const { orderId, amount, email, customerId } = paymentData;
 
-    const { orderId, amount, email, customerId } = paymentData 
+  // Fetch all orders
+  const orders = await this.orderModel.find({
+    _id: { $in: orderId },
+    user: customerId,
+    status: 'PENDING_PAYMENT',
+  });
 
-    const order = await this.orderModel.findById(orderId);
-    if (!order) throw new NotFoundException('Order not found');
+  if (!orders || orders.length === 0) {
+    throw new NotFoundException('No pending orders found for payment');
+  }
 
-    const txRef = generateTxRef()
+  // Generate transaction reference
+  const txRef = generateTxRef();
 
-    const payment = await this.paymentModel.create({
-        txRef,
-        email,
-        amount,
-        orderId,
-        paymentDate: new Date(),
-        customerId,
-        status: PaymentStatus.INITIATED,
-      
-     })
-    
-    try { 
+  // Create payment record
+  const payment = await this.paymentModel.create({
+    txRef,
+    email,
+    amount,
+    orderId, // now an array
+    paymentDate: new Date(),
+    customerId,
+    status: PaymentStatus.INITIATED,
+  });
 
-    const response = await axios.post(`${paystackConfig.baseUrl}/transaction/initialize`, {
+  try {
+    // Call Paystack initialize
+    const response = await axios.post(
+      `${paystackConfig.baseUrl}/transaction/initialize`,
+      {
         reference: txRef,
-        amount: amount * 100,
+        amount: amount * 100, // Paystack expects kobo
         email,
         metadata: {
-            orderId,
-            customerId,
+          orderId,
+          customerId,
         },
+      },
+      {
         headers: {
-            Authorization: `Bearer ${paystackConfig.secretKey}`,
+          Authorization: `Bearer ${paystackConfig.secretKey}`,
         },
-    })
+      },
+    );
 
-    const { reference, authorization_url } = response.data.data
+    const { reference, authorization_url } = response.data.data;
 
+    // Update payment record
     await this.paymentModel.updateOne(
-        { _id: payment._id },
-        { reference, status: PaymentStatus.PENDING }
-    )
+      { _id: payment._id },
+      { reference, status: PaymentStatus.PENDING },
+    );
 
-
-        return {
-            msg: 'payment initialized',
-                reference,
-                authorization_url,
-                txRef
-        }
-
-     } catch (error) {
+    return {
+      msg: 'Payment initialized',
+      reference,
+      authorization_url,
+      txRef,
+    };
+  } catch (error) {
     throw new Error(`Payment initialization failed: ${error.message}`);
-    }
+  }
 }
+
 
     async verifyPayment(ref: string){
         const response = await axios.get(

@@ -11,6 +11,13 @@ export enum OrderStatus {
   CANCELLED = 'cancelled'
 }
 
+export interface Items {
+    product: Types.ObjectId | Product
+    quantity: number
+    _id?: Types.ObjectId
+}
+
+
 @Schema({ timestamps: true })
 export class Order extends Document {
 
@@ -26,16 +33,14 @@ export class Order extends Document {
     @Prop({ ref: 'User', type: Types.ObjectId })
     user: Types.ObjectId;
 
-  @Prop([{
+    @Prop({ vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true }})
+    vendor: Types.ObjectId
+
+   @Prop([{
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
-    vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
     quantity: { type: Number, required: true, default: 1 }
   }])
-  items: {
-    product: Product;
-    vendor: Vendor;
-    quantity: number;
-  }[]
+    items: Items[]
 
     @Prop({ type: Number, default: 0 })
     totalPrice: number;               

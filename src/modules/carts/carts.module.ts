@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { CartsService } from './carts.service';
+import { CartService } from './carts.service';
 import { CartsController } from './carts.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../user/model/user.model';
@@ -16,8 +16,8 @@ import { AuthModule } from '../auth/auth.module';
     ]),
     AuthModule
   ],
-  providers: [CartsService],
+  providers: [CartService],
   controllers: [CartsController],
-  exports: [CartsService]
+  exports: [CartService]
 })
 export class CartsModule {}

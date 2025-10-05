@@ -31,8 +31,8 @@ export class CartService {
       existingItem.quantity += quantity;
     } else {
       cart.items.push({
-        product: new Types.ObjectId(productId),
-        vendor: product.vendor.id,
+        product: product,
+        vendor: product.vendor._id,
         quantity,
       });
     }
@@ -41,8 +41,6 @@ export class CartService {
 
     // Save cart
     await cart.save()
-
-    // Return cart with calculated total
   
   }
 

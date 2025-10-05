@@ -5,7 +5,7 @@ export class PaymentDTO {
     amount: number;
 
     @IsString()
-    orderId: string;
+    orderId: string[]
 
     @IsString()
     customerId: string;

@@ -84,7 +84,7 @@ export class Product extends Document {
     status: 'active' | 'inactive' | 'draft';
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true })
-    vendor: string; // Vendor UUID
+    vendor: Types.ObjectId; 
 
 }
 

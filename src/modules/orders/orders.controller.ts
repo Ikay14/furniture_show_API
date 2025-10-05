@@ -8,6 +8,7 @@ import {
   ApiParam,
   ApiBody,
 } from '@nestjs/swagger';
+import { GetUser } from 'src/decorators/user.decorator';
 
 @ApiTags('Orders') // Groups all order-related endpoints
 @ApiBearerAuth() // Indicates this controller requires authentication
@@ -45,9 +46,10 @@ export class OrdersController {
       },
     },
   })
-  async createOrder(@Req() req, @Body('cartId') cartId: string) {
-    const userId = req.user.id;
-    return this.ordersService.createOrder(userId, cartId);
+  async createOrder(
+    @GetUser() userId: string,
+    @Body('cartId') cartId: string) {
+    return this.ordersService.createOrders(userId, cartId)
   }
 
   @Get(':id')

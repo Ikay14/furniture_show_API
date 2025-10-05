@@ -12,13 +12,6 @@ export interface CartItemRaw {
     _id?: Types.ObjectId
 }
 
-// // Interface for cart item when POPULATED
-// export interface CartItemPopulated {
-//   product: Product; // Full Product document
-//   vendor: Vendor;   // Full Vendor document
-//   quantity: number;
-//   _id?: Types.ObjectId;
-// }
 
 @Schema({ timestamps: true, _id: false })
 export class Cart extends Document
