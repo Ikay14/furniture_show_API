@@ -13,7 +13,7 @@ export interface CartItemRaw {
 }
 
 
-@Schema({ timestamps: true, _id: false })
+@Schema({ timestamps: true })
 export class Cart extends Document
  {
 

@@ -52,6 +52,39 @@ export class OrdersController {
     return this.ordersService.createOrders(userId, cartId)
   }
 
+  @Post('checkout')
+   @ApiOperation({
+    summary: 'Checkout Orders',
+    description: 'Retrieves all orders for a specific user',
+  })
+  @ApiBody({
+    description: 'Order ID to checkout from',
+    schema: {
+      type: 'object',
+      properties: {
+        orderId: {
+          type: 'string',
+          example: '65a1d7f8d4c6d83e1f7e3f5a',
+          description: 'IDs of the diffferent order from difrent vendors',
+        },
+      },
+    },
+  })
+   @ApiResponse({
+    status: 200,
+    description: 'Payment Successfull',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Payment failed',
+  })
+  async checkoutOrder(
+    @Body() orderIds: string[],
+    @GetUser('id') userId: string
+  ){
+    return this.ordersService.checkout(orderIds, userId)
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Get user orders',
