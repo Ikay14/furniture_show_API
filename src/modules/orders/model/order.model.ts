@@ -1,6 +1,6 @@
 import { Schema, SchemaFactory, Prop } from "@nestjs/mongoose";
 import mongoose, { Document, Types } from "mongoose";
-import shortUUID from "short-uuid";
+import { v4 as uuidv4 } from 'uuid';
 import { Product } from "src/modules/product/model/product.model";
 import { Vendor } from "src/modules/vendor/model/vendor.model";
 
@@ -23,7 +23,7 @@ export class Order extends Document {
 
     @Prop({ 
         type: String,
-        default: () => shortUUID.generate(), 
+        default: uuidv4, 
         unique: true, 
         index: true, 
         required: true 
@@ -65,6 +65,9 @@ export class Order extends Document {
 
     @Prop({ type: String, default: 'pending' })
     status: OrderStatus;
+
+    @Prop({ type: Date })
+    createdAt: Date;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

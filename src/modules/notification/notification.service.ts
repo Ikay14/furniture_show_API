@@ -1,9 +1,11 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { EventQueue } from "../events/event.queue";
+import { UserOrderNotificationData } from "./DTO/order.details";
 
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name)
     constructor( private eventQueue: EventQueue,
   ) {}
 
@@ -56,5 +58,32 @@ export class NotificationService {
         data: { product: product.name, vendor: product.vendorName },
     }, { delay: 5000, priority: 2 })
   }
+
+  async sendUserOrder(order: UserOrderNotificationData) {
+  await this.eventQueue.sendNotification(
+    'ORDER_CREATED',
+    {
+      type: 'ORDER_CREATED',
+      channel: ['EMAIL', 'APP'],
+      to: order.email,
+      subject: `Hi ${order.name}, your order ${order.orderId} was placed successfully!`,
+      data: {
+        user: order.name,
+        orderId: order.orderId,
+        total: order.orderTotal,
+        date: order.orderDate,
+        vendor: order.vendorName,
+        products: order.products.map(p => ({
+          name: p.name,
+          quantity: p.quantity,
+          price: p.price,
+        })),
+      },
+    },
+    { delay: 5000, priority: 2 }
+  );
+  this.logger.log('order notification sent')
+}
+
 
 }

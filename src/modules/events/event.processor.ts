@@ -24,13 +24,6 @@ export class EmailProcessor extends WorkerHost {
   async process(job: Job<NotificationPayload>): Promise<any> {
     const { type, channel, to, data } = job.data;
 
-    // templates to get type of notification
-    // const templates = {
-    //   WELCOME_EMAIL: 'welcome',
-    //   FORGOT_PASSWORD: 'resetPassword',
-    //   VENDOR_APPROVAL: 'vendor',
-    // };
-    
     const config = notificationTemplates[type];
 
     if (!config) {

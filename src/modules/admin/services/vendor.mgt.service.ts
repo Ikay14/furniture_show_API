@@ -8,7 +8,7 @@ import { InjectRedis } from "@nestjs-modules/ioredis";
 import { CACHE_TTL } from "src/config/db.config";
 import { DeclineVendorDto } from "../DTO/decline.dto";
 import { Logger } from "@nestjs/common";
-import { NotificationService } from "src/modules/notification/notifcation.service"; 
+import { NotificationService } from "src/modules/notification/notification.service"; 
 
 @Injectable()
 export class VendorManagementService {

@@ -3,8 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { Server } from 'http';
-import { Mongoose } from 'mongoose';
 import serverConfig from './config/server.config';
 import { ProductModule } from './modules/product/product.module';
 import { UserModule } from './modules/user/user.module';
@@ -42,8 +40,8 @@ import { EventModule } from './modules/events/event.module';
     OrdersModule,
     PaymentModule,
     VendorModule,
-    NotificationModule,
-    EventModule
+    EventModule,
+    NotificationModule
   ], 
   controllers: [AppController],
   providers: [AppService],

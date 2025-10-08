@@ -41,8 +41,76 @@ export class CartService {
   return await this.getOrCreateCart(userId);
 }
 
+async getCart(userId: string) {
+    const cart = await this.cartModel
+      .findOne({
+        user: userId,
+        isPurchased: false,
+        isActive: true,
+      })
+      .populate({
+        path: 'items.product',
+        select: 'name price images description stock',
+      })
+      .populate({
+        path: 'items.vendor',
+        select: 'name email',
+      })
+      .lean()
 
-  // Helper: Find product with vendor
+    if (cart) {
+      cart.totalPrice = cart.items.reduce((total, item) => {
+        const product = item.product as Product;
+        return total + (product.price * item.quantity);
+      }, 0);
+    }
+
+    return cart;
+  }
+
+
+async removeFromCart(userId: string, productId: string, quantityToRemove = 1) {
+  const cart = await this.cartModel.findOne({
+    user: userId,
+    isPurchased: false,
+    isActive: true,
+  });
+
+  if (!cart) throw new NotFoundException('Cart not found');
+
+  const item = cart.items.find(
+    (i) => i.product.toString() === productId.toString()
+  );
+
+  if (!item) throw new NotFoundException('Product not found in cart');
+
+  // Adjust quantity or remove item
+  if (item.quantity > quantityToRemove) {
+    item.quantity -= quantityToRemove;
+  } else {
+    cart.items = cart.items.filter(
+      (i) => i.product.toString() !== productId.toString()
+    );
+  }
+
+  // Recalculate total
+  await this.calculateTotalPrice(cart);
+
+  cart.markModified('items');
+  await cart.save();
+
+  return cart;
+}
+
+async clearCart(userId: string): Promise<void> {
+    await this.cartModel.findOneAndUpdate(
+      { user: userId, isPurchased: false },
+      { items: [], totalPrice: 0 }
+    );
+  }
+
+  // Helpers: ****************************************
+  
   private async findProductWithVendor(productId: string) {
     const product = await this.productModel
       .findById(productId)
@@ -74,76 +142,19 @@ export class CartService {
   return cart;
 }
 
-  
-async calculateTotalPrice(cart: CartDocument) {
-  let total = 0;
 
-  for (const item of cart.items) {
-    const product = await this.productModel.findById(item.product).select('price');
-    if (!product) continue;
-    total += product.price * item.quantity;
-  }
+private async calculateTotalPrice(cart: CartDocument): Promise<void> {
+  // Populate prices of all products
+  await cart.populate('items.product', 'price');
+
+  const total = cart.items.reduce((sum, item) => {
+    const price = (item.product as any)?.price || 0;
+    return sum + price * item.quantity;
+  }, 0);
 
   cart.totalPrice = total;
-
-  await this.cartModel.findByIdAndUpdate(cart._id, { totalPrice: total });
-
-  return total;
 }
 
 
-  async removeFromCart(userId: string, productId: string) {
-    const cart = await this.cartModel.findOne({
-      user: userId,
-      isPurchased: false,
-      isActive: true,
-    });
-
-    if (!cart) {
-      throw new NotFoundException('Cart not found');
-    }
-
-    // Filter out the item
-    cart.items = cart.items.filter(
-      (item) => item.product.toString() !== productId
-    );
-
-    await cart.save();
-
-    return cart
-  }
-
-  async clearCart(userId: string): Promise<void> {
-    await this.cartModel.findOneAndUpdate(
-      { user: userId, isPurchased: false },
-      { items: [], totalPrice: 0 }
-    );
-  }
-
-  async getCart(userId: string) {
-    const cart = await this.cartModel
-      .findOne({
-        user: userId,
-        isPurchased: false,
-        isActive: true,
-      })
-      .populate({
-        path: 'items.product',
-        select: 'name price images description stock',
-      })
-      .populate({
-        path: 'items.vendor',
-        select: 'name email',
-      })
-      .lean()
-
-    if (cart) {
-      cart.totalPrice = cart.items.reduce((total, item) => {
-        const product = item.product as Product;
-        return total + (product.price * item.quantity);
-      }, 0);
-    }
-
-    return cart;
-  }
 }
+

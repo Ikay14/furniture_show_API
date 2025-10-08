@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { Notification, NotificationSchema } from './model/notification.model';
 import { MongooseModule } from '@nestjs/mongoose';
-import { NotificationCron } from '../events/cron.jobs';
-import { NotificationService } from '../notification/notifcation.service';
+import { NotificationService } from './notification.service';
 import { EventModule } from '../events/event.module';
 
 @Module({

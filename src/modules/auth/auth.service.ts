@@ -12,7 +12,7 @@ import { LoginDTO } from '../user/DTO/login.user.dto';
 import { ValidateDTO } from '../user/DTO/otp.validate.dto';
 import { MailService } from 'src/services/email.service';
 import { RequestOtpDto } from '../user/DTO/request.dto';
-import { NotificationService } from '../notification/notifcation.service';
+import { NotificationService } from '../notification/notification.service';
 import { Logger } from '@nestjs/common';
 
 @Injectable()

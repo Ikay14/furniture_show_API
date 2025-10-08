@@ -6,7 +6,7 @@ import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { Product } from "src/modules/product/model/product.model";
 import { CloudinaryService } from "src/services/cloudinary.service";
 import { Vendor } from "../model/vendor.model";
-import { NotificationService } from "src/modules/notification/notifcation.service";
+import { NotificationService } from "src/modules/notification/notification.service";
 import Redis from "ioredis";
 import { CACHE_TTL } from "src/config/db.config";
 import { InjectRedis } from "@nestjs-modules/ioredis";

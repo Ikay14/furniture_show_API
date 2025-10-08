@@ -1,16 +1,8 @@
 import { Type } from "@nestjs/common";
 import { SchemaFactory, Schema, Prop } from "@nestjs/mongoose";
 import mongoose, { Document, HydratedDocument, Types } from "mongoose";
-import { Product } from "src/modules/product/model/product.model";
-import { Vendor } from "src/modules/vendor/model/vendor.model";
+import { CartItemRaw } from "../cart.interface";
 import { v4 as uuidv4 } from 'uuid';
-
-export interface CartItemRaw {
-    product: Types.ObjectId | Product
-    vendor: Types.ObjectId | Vendor
-    quantity: number
-    _id?: Types.ObjectId
-}
 
 
 @Schema({ timestamps: true })
@@ -56,3 +48,4 @@ export const CartSchema = SchemaFactory.createForClass(Cart);
 
 
 export type CartDocument = HydratedDocument<Cart>;
+

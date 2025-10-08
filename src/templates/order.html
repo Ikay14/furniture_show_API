@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Your Order Confirmation</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background-color: #f9f9fb;
+        color: #333;
+        padding: 24px;
+      }
+      .container {
+        max-width: 640px;
+        margin: auto;
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        padding: 32px;
+      }
+      h1 {
+        color: #222;
+        font-size: 22px;
+        margin-bottom: 8px;
+      }
+      .summary {
+        margin-top: 24px;
+        background: #f3f4f6;
+        border-radius: 8px;
+        padding: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+      }
+      th, td {
+        text-align: left;
+        padding: 8px;
+      }
+      th {
+        border-bottom: 1px solid #ddd;
+        color: #555;
+      }
+      td {
+        border-bottom: 1px solid #eee;
+      }
+      .total {
+        font-weight: bold;
+        text-align: right;
+        padding-top: 12px;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 32px;
+        font-size: 13px;
+        color: #777;
+      }
+      .btn {
+        display: inline-block;
+        background-color: #007bff;
+        color: #fff;
+        text-decoration: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Hi {{name}},</h1>
+      <p>🎉 Your order <strong>#{{orderId}}</strong> has been created successfully!</p>
+      <p>Thank you for shopping with <strong>{{vendorName}}</strong>.</p>
+
+      <div class="summary">
+        <p><strong>Order Date:</strong> {{orderDate}}</p>
+        <p><strong>Total Amount:</strong> ₦{{orderTotal}}</p>
+      </div>
+
+      <h3>🛒 Order Summary</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Price (₦)</th>
+            <th>Subtotal (₦)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each products}}
+          <tr>
+            <td>{{this.name}}</td>
+            <td>{{this.quantity}}</td>
+            <td>{{this.price}}</td>
+            <td>{{multiply this.price this.quantity}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <p class="total">Total: ₦{{orderTotal}}</p>
+
+      <a href="{{orderUrl}}" class="btn">View Order</a>
+
+      <div class="footer">
+        <p>If you have any questions, reply to this email — we're happy to help!</p>
+        <p>© {{year}} ShopFurYou. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

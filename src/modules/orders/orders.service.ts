@@ -1,32 +1,38 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { Order } from './model/order.model';
 import { Model, Connection, ClientSession } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product } from '../product/model/product.model';
-import { Cart, CartDocument, CartItemRaw } from '../carts/model/carts.model';
+import { Cart, CartDocument } from '../carts/model/carts.model';
 import { InjectConnection } from '@nestjs/mongoose';
 import { generateOrderRef } from 'src/utils/generate.order.reference';
 import { OrderStatus } from './model/order.model';
 import { PaymentService } from '../payment/payment.service';
 import { User } from '../user/model/user.model';
-
+import { OrderItemPopulated, CartItemRaw } from '../carts/cart.interface';
+import { NotificationService } from '../notification/notification.service';
+import { Vendor } from '../vendor/model/vendor.model';
+import { toUserEntity, UserEntity } from '../user/DTO/user-entity.dto';
 
 @Injectable()
 export class OrdersService {
+    private readonly logger = new Logger(OrdersService.name)
     constructor(
         @InjectModel(Order.name) private orderModel: Model<Order>,
         @InjectModel(Cart.name) private cartModel: Model<CartDocument>,
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(Product.name) private productModel: Model<Product>,
         @InjectConnection() private readonly connection: Connection,
-        private paymentService: PaymentService
+        private paymentService: PaymentService,
+        private notificationService: NotificationService,
     ){}
 
     async createOrders(cartId: string, userId: string) {
     const session = await this.connection.startSession();
     session.startTransaction();
-
     try {
+      const user = await this.getuser(userId)
+
       const cart = await this.validateCart(cartId, userId, session)
 
       const foundProducts = await this.validateProducts(cart, session)
@@ -41,7 +47,32 @@ export class OrdersService {
         )
       )
 
-      await this.deactivateCart(cartId, session);
+      // Populate the first order for notification
+      const firstOrder = await this.orderModel
+        .findById(createdOrders[0]._id)
+        .populate<{ vendor: Vendor }>('vendor', 'storeName')
+        .populate<{ items: OrderItemPopulated[] }>('items.product', 'name price')
+        .lean()
+
+      if (firstOrder) {
+        await this.notificationService.sendUserOrder({
+          userId: userId,
+          name: user.user.lastName,
+          email: user.user.email,
+          orderId: firstOrder.orderId,
+          orderTotal: firstOrder.totalPrice,
+          orderDate: firstOrder.createdAt,
+          vendorName: firstOrder.vendor.storeName,
+          products: firstOrder.items.map(item => ({
+            name: item.product.name,    
+            quantity: item.quantity,
+            price: item.product.price, 
+          })),
+        })
+        this.logger.log('Order email job added to the queue');
+}
+
+      await this.deactivateCart(cartId, session)
 
       await session.commitTransaction()
       return { msg: 'Orders created successfully', orders: createdOrders }
@@ -72,11 +103,8 @@ export class OrdersService {
     }
 
     async checkout(orderIds: string[], userId: string) {
-    // Fetch orders
-    const orders = await this.orderModel.find({ 
-      _id: { $in: orderIds }, 
-      user: userId, 
-      status: 'PENDING_PAYMENT' 
+      const orders = await this.orderModel.find({ _id: { $in: orderIds }, 
+      user: userId,  status: 'PENDING_PAYMENT' 
     }).populate('user', 'email');
 
     if (!orders || orders.length === 0) {
@@ -101,28 +129,23 @@ export class OrdersService {
   }
 
 
-    private async createVendorOrder(
-          userId: string,
-          cart: Cart,
-          vendorId: string,
-          items: any[],
-          session: ClientSession
-        ) {
+    private async createVendorOrder( userId: string, cart: CartDocument,
+          vendorId: string, items: any[], session: ClientSession ) {
          const totalPrice = items.reduce(
             (sum, item) => sum + item.product.price * item.quantity, 0);
 
           // Reduce stock for only these vendor items
-          await this.reduceStock(items, session);
+          await this.reduceStock(items, session)
 
           // Create vendor-specific order record
-         const order = await this.createOrderRecord(userId, vendorId, cart.id, items, totalPrice, session);
+         const order = await this.createOrderRecord(userId, vendorId, cart.id, items, totalPrice, session)
 
-          return order;
+         return order
 }
 
   private async validateCart(cartId: string, userId: string, session: ClientSession) {
-  const cart = await this.cartModel.findOne({ _id: cartId, user: userId, isActive: true })
-    .populate('items.product', 'name price inStock vendor')
+  const cart = await this.cartModel.findById({ _id: cartId, user: userId, isActive: true })
+    .populate('items.product', 'name price vendor')
     .session(session);
 
   if (!cart || cart.items.length === 0) throw new BadRequestException('Empty cart');
@@ -131,8 +154,8 @@ export class OrdersService {
 
 
 
-    private async validateProducts(cart: any, session: ClientSession) {
-    const productIds = cart.items.map((item: any) => item.product._id)
+    private async validateProducts(cart: CartDocument, session: ClientSession) {
+    const productIds = cart.items.map((item) => item.product._id)
 
     const foundProducts = await this.productModel.find({ _id: { $in: productIds } }).session(session)
 
@@ -144,15 +167,42 @@ export class OrdersService {
 }
 
 
-    private async checkStockLevels(cart: any, foundProducts: any[]) {
-    for (const item of cart.items) {
-    const product = foundProducts.find(p => p.id.equals(item.product._id))
-    if (!product || product.inStock < item.quantity) {
-      throw new BadRequestException(`Product ${product?.name || item.product._id} is out of stock`)
+private async checkStockLevels(cart: CartDocument, foundProducts: any[]) {
+  const errors: string[] = [];
+
+  for (const item of cart.items) {
+    const itemProductId = item.product._id
+      ? item.product._id.toString()
+      : item.product.toString();
+
+    const product = foundProducts.find(
+      (p) => p._id.toString() === itemProductId
+    );
+
+    switch (true) {
+      case !product:
+        errors.push(`Product ${itemProductId} not found in inventory`);
+        break;
+
+      case product.inStock == null:
+        errors.push(`Product ${product.name} has no stock data`);
+        break;
+
+      case product.inStock < item.quantity:
+        errors.push(
+          `Product ${product.name} is out of stock (requested: ${item.quantity}, available: ${product.inStock})`
+        );
+        break;
+
+      default:
+        break;
     }
   }
-}
 
+  if (errors.length > 0) {
+    throw new BadRequestException(errors.join('; '));
+  }
+}
 
 private async reduceStock(items: any[], session: ClientSession) {
   for (const item of items) {
@@ -190,7 +240,7 @@ private async reduceStock(items: any[], session: ClientSession) {
 }
 
 
-private groupItemsByVendor(cart: Cart): Record<string, CartItemRaw[]> {
+private groupItemsByVendor(cart: CartDocument): Record<string, CartItemRaw[]> {
   return cart.items.reduce((acc, item) => {
     const vendorId = item.vendor.toString()
     if (!acc[vendorId]) acc[vendorId] = []
@@ -202,9 +252,11 @@ private groupItemsByVendor(cart: Cart): Record<string, CartItemRaw[]> {
   private async deactivateCart(cartId: string, session: ClientSession) {
   await this.cartModel.updateOne({ _id: cartId }, { isActive: false }, { session })
 }
- 
- private async checkoutOrderPayment(){}
+
+  private async getuser(userId: string):Promise<{user: UserEntity}>{
+    const user = await this.userModel.findById(userId).lean()
+    if(!user) throw new NotFoundException('user not found')
+    return {user: toUserEntity(user) }
+  }
 
 }
-
-

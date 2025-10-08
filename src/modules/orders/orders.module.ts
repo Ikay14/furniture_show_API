@@ -10,6 +10,8 @@ import { CartsModule } from '../carts/carts.module';
 import { PaymentService } from '../payment/payment.service';
 import { Product, ProductSchema } from '../product/model/product.model';
 import { Payment,PaymentSchema } from '../payment/model/payment.model';
+import { NotificationModule } from '../notification/notification.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -21,7 +23,9 @@ import { Payment,PaymentSchema } from '../payment/model/payment.model';
       { name: Payment.name, schema: PaymentSchema },
     ]),
     ProductModule,
-    CartsModule
+    CartsModule,
+    NotificationModule,
+    AuthModule
   ],  
   
   providers: [OrdersService,PaymentService],

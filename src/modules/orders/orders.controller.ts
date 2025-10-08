@@ -1,22 +1,17 @@
-import { Controller, Post, Get, Param, Body, Req } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Req, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, } from '@nestjs/swagger';
 import { GetUser } from 'src/decorators/user.decorator';
+import { JwtAuthGuard } from 'src/guards/jwt.guard';
 
-@ApiTags('Orders') // Groups all order-related endpoints
-@ApiBearerAuth() // Indicates this controller requires authentication
+@ApiTags('Orders') 
+@ApiBearerAuth() 
+@UseGuards(JwtAuthGuard)
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  @Post('create-order')
+  @Post(':cartId/create-order')
   @ApiOperation({
     summary: 'Create a new order',
     description: 'Creates an order from a user\'s cart',
@@ -47,9 +42,9 @@ export class OrdersController {
     },
   })
   async createOrder(
-    @GetUser() userId: string,
-    @Body('cartId') cartId: string) {
-    return this.ordersService.createOrders(userId, cartId)
+    @Param('cartId') cartId: string,
+    @GetUser('id') userId: string) {
+    return this.ordersService.createOrders(cartId, userId)
   }
 
   @Post('checkout')
