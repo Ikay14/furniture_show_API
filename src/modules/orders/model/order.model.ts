@@ -2,6 +2,7 @@ import { Schema, SchemaFactory, Prop } from "@nestjs/mongoose";
 import mongoose, { Document, Types } from "mongoose";
 import { v4 as uuidv4 } from 'uuid';
 import { Product } from "src/modules/product/model/product.model";
+import { User } from "src/modules/user/model/user.model";
 import { Vendor } from "src/modules/vendor/model/vendor.model";
 
 export enum OrderStatus {
@@ -30,11 +31,11 @@ export class Order extends Document {
       })
     orderId: string;
 
-    @Prop({ ref: 'User', type: Types.ObjectId })
-    user: Types.ObjectId;
+    @Prop({  type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+    user: User
 
     @Prop({ vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true }})
-    vendor: Types.ObjectId
+    vendor: Vendor
 
    @Prop([{
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -48,8 +49,8 @@ export class Order extends Document {
     @Prop({ type: Boolean, default: false })
     isPaid: boolean;
 
-    @Prop({ type: String, default: 'card' })
-    paymentMethod: string;
+    // @Prop({ type: String, default: 'card' })
+    // paymentMethod: string;
 
     @Prop({ type: Boolean, default: false })
     isDelivered: boolean;
@@ -64,7 +65,7 @@ export class Order extends Document {
     isActive: boolean;
 
     @Prop({ type: String, default: 'pending' })
-    status: OrderStatus;
+    status: OrderStatus
 
     @Prop({ type: Date })
     createdAt: Date;

@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import mongoose, { Document, Types } from "mongoose";
+import { User } from "src/modules/user/model/user.model";
 
 
 export const PaymentStatus = {
@@ -19,17 +20,17 @@ export class Payment extends Document {
     @Prop({ type: String, required: true })
     txRef: string;
 
-    @Prop({ type: String, required: true })
+    @Prop({ type: String, required: false })
     reference: string;
 
     @Prop({ type: Number, required: true })
     amount: number;
 
-    @Prop({ type: String, required: true })
-    orderId: string;
+    @Prop({ type: [String], required: true })
+    orderId: string[];
 
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-    customerId: Types.ObjectId;
+    customerId: User;
 
     @Prop({ type: Date })
     paymentDate: Date

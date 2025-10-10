@@ -1,12 +1,12 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEmail } from "class-validator";
+import { IsString } from "class-validator";
 
-export class RequestOtpDto {
+export class FORGOT_PASSWORD_DTO{
     @ApiProperty({
         description: 'The user\'s email address',
         example: 'john.doe@example.com'
-    })
-    @IsEmail()
-    email: string;
-}
+        })
+    @IsString()
+    email: string
 
+}

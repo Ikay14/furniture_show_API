@@ -29,42 +29,39 @@ export class NotificationService {
     }, { delay: 5000, priority: 3 }) 
   }
 
-    async sendForgotPassword(user: { email: string; otp: string }) {
-        await this.eventQueue.sendNotification('FORGoT_PASSWORD', {
-        type: 'FORGOT_PASSWORD',
-        channel: ['EMAIL'],
+    async sendForgotPasswordRequest(user: { name?: string, email: string; otp: string }) {
+        await this.eventQueue.sendNotification('REQUEST_PASSWORD_OTP', {
+        type: 'REQUEST_PASSWORD_OTP',
         to: user.email,
         subject: 'Reset your password',
         data: { otp: user.otp },
+        channel: ['EMAIL'],
     }, { delay: 5000, priority: 1 })
   }
 
     async sendVendorApproval(vendor: { email: string; vendorName: string, status?: string }) {
         await this.eventQueue.sendNotification('VENDOR_APPROVAL',{
         type: 'VENDOR_APPROVAL',
-        channel: ['EMAIL', 'APP'],
         to: vendor.email,
         subject: 'Vendor Approved!',
         data: { vendor: vendor.vendorName, status: vendor.status },
+        channel: ['EMAIL', 'APP'],
     }, { delay: 5000, priority: 3 })
 }
 
     async sendNewProductNotification(product: { name: string; email: string; vendorName: string  }) {
         await this.eventQueue.sendNotification('PRODUCT_CREATED', {
         type: 'PRODUCT_CREATED',
-        channel: ['EMAIL', 'APP'],
         to: product.email,
         subject: 'New Product Added!',
         data: { product: product.name, vendor: product.vendorName },
+        channel: ['EMAIL', 'APP'],
     }, { delay: 5000, priority: 2 })
   }
 
   async sendUserOrder(order: UserOrderNotificationData) {
-  await this.eventQueue.sendNotification(
-    'ORDER_CREATED',
-    {
+  await this.eventQueue.sendNotification( 'ORDER_CREATED', {
       type: 'ORDER_CREATED',
-      channel: ['EMAIL', 'APP'],
       to: order.email,
       subject: `Hi ${order.name}, your order ${order.orderId} was placed successfully!`,
       data: {
@@ -79,9 +76,10 @@ export class NotificationService {
           price: p.price,
         })),
       },
+      channel: ['EMAIL']
     },
     { delay: 5000, priority: 2 }
-  );
+  )
   this.logger.log('order notification sent')
 }
 

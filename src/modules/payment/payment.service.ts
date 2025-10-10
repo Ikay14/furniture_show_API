@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Payment,PaymentStatus } from './model/payment.model'
 import { Model, Types } from 'mongoose';
-import { Order } from '../orders/model/order.model';
+import { Order, OrderStatus } from '../orders/model/order.model';
 import { PaymentDTO } from './DTO/payment.dto';
 import { paystackConfig } from 'src/config/paystack.config';
 import { generateTxRef } from 'src/utils/generate.txref';
@@ -11,24 +11,14 @@ import axios from 'axios';
 
 @Injectable()
 export class PaymentService {
+  private readonly logger = new Logger(PaymentService.name)
   constructor(
     @InjectModel(Payment.name) private readonly paymentModel: Model<Payment>,
     @InjectModel(Order.name) private readonly orderModel: Model<Order>,
   ) {}
 
   async initializePayment(paymentData: PaymentDTO) {
-  const { orderId, amount, email, customerId } = paymentData;
-
-  // Fetch all orders
-  const orders = await this.orderModel.find({
-    _id: { $in: orderId },
-    user: customerId,
-    status: 'PENDING_PAYMENT',
-  });
-
-  if (!orders || orders.length === 0) {
-    throw new NotFoundException('No pending orders found for payment');
-  }
+  const { orderIds, amount, email, customerId } = paymentData;
 
   // Generate transaction reference
   const txRef = generateTxRef();
@@ -38,22 +28,22 @@ export class PaymentService {
     txRef,
     email,
     amount,
-    orderId, // now an array
+    orderIds, 
     paymentDate: new Date(),
     customerId,
     status: PaymentStatus.INITIATED,
-  });
+  }) 
 
   try {
     // Call Paystack initialize
     const response = await axios.post(
       `${paystackConfig.baseUrl}/transaction/initialize`,
       {
-        reference: txRef,
-        amount: amount * 100, // Paystack expects kobo
+        txRef,
+        amount, // Paystack expects kobo
         email,
         metadata: {
-          orderId,
+          orderIds,
           customerId,
         },
       },
@@ -63,6 +53,7 @@ export class PaymentService {
         },
       },
     );
+
 
     const { reference, authorization_url } = response.data.data;
 
@@ -84,44 +75,57 @@ export class PaymentService {
 }
 
 
-    async verifyPayment(ref: string){
-        const response = await axios.get(
-            `${paystackConfig.baseUrl}/transaction/verify/${ref}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${paystackConfig.secretKey}`,
-                },
-            }
-        )
+    async verifyPayment(reference: string) {
+    const response = await axios.get(
+    `${paystackConfig.baseUrl}/transaction/verify/${reference}`,
+    {
+      headers: {
+        Authorization: `Bearer ${paystackConfig.secretKey}`,
+      },
+    },
+  );
 
-        const data = response.data.data
-        if (data.status === 'success'){
-            await this.paymentModel.updateOne(
-                { ref },
-                {
-                    status: PaymentStatus.SUCCESSFUL,
-                    paymentMethod: data.channel,
-                    paymentDetails: data.authorization,
-                    paymentDate: data.transaction_date
-                }
-            )
+  const data = response.data.data;
 
-            await this.orderModel.updateOne(
-                { _id: data.metadata.orderId },
-                {
-                    paymentStatus: 'PAID',
-                    isPaid: true,
-                    paidAt: data.transaction_date
-                }
-            )
-        }
+  if (data.status !== 'success') {
+    await this.paymentModel.updateOne(
+      { reference },
+      { status: PaymentStatus.FAILED },
+    );
+    throw new BadRequestException('Payment verification failed');
+  }
 
-  
-        return {
-            msg: 'Payment verified successfully',
-            data
-        }
-    }
+  await this.paymentModel.updateOne(
+    {  reference },
+    {
+      status: PaymentStatus.SUCCESSFUL,
+      paymentMethod: data.channel,
+      currency: data.currency,
+      paymentDetails: data.authorization,
+      paymentDate: data.transaction_date,
+    },
+  );
+
+
+  if (Array.isArray(data.metadata?.orderIds)) {
+    await this.orderModel.updateMany(
+      { _id: { $in: data.metadata.orderIds } },
+      {
+        $set: {
+          status: OrderStatus.COMPLETED,
+          isPaid: true,
+          paymentMethod: data.channel || 'card',
+          updatedAt: new Date(),
+        },
+      },
+    );
+  }
+
+  return {
+    msg: 'Payment verified successfully',
+    data,
+  }
+}
 
 
     async handlePaystackWebhook(payload: any) {

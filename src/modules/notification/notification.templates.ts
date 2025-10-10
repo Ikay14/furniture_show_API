@@ -4,11 +4,6 @@ export const notificationTemplates = {
     template: 'welcome',
     channels: ['EMAIL'],
   },
-  FORGOT_PASSWORD: {
-    subject: 'Reset your password',
-    template: 'resetPassword',
-    channels: ['EMAIL'],
-  },
   VENDOR_APPROVAL: {
     subject: 'Vendor Approved!',
     template: 'vendor',
@@ -22,7 +17,7 @@ export const notificationTemplates = {
   ORDER_CREATED: {
     subject: 'Order Created!',
     template: 'order',
-    channels: ['EMAIL', 'APP'],
+    channels: ['EMAIL'],
   },
   PRODUCT_UPDATED: {
     subject: 'Product Updated!',
@@ -33,6 +28,11 @@ export const notificationTemplates = {
     subject: 'OTP Request!',
     template: 'request.otp',
     channels: ['EMAIL', 'APP'],
+  },
+  REQUEST_PASSWORD_OTP: {
+    subject: 'Request PASSWORD SENT!',
+    template: 'request-password',
+    channels: ['EMAIL'],
   },
 };
 

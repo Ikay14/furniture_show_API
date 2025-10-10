@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { Order } from './model/order.model';
-import { Model, Connection, ClientSession } from 'mongoose';
+import { Model, Connection, ClientSession, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product } from '../product/model/product.model';
 import { Cart, CartDocument } from '../carts/model/carts.model';
@@ -13,6 +13,7 @@ import { OrderItemPopulated, CartItemRaw } from '../carts/cart.interface';
 import { NotificationService } from '../notification/notification.service';
 import { Vendor } from '../vendor/model/vendor.model';
 import { toUserEntity, UserEntity } from '../user/DTO/user-entity.dto';
+import { CheckoutDTO } from './dto/checkout.dto';
 
 @Injectable()
 export class OrdersService {
@@ -54,6 +55,7 @@ export class OrdersService {
         .populate<{ items: OrderItemPopulated[] }>('items.product', 'name price')
         .lean()
 
+      this.logger.log('Order email job added to the queue');
       if (firstOrder) {
         await this.notificationService.sendUserOrder({
           userId: userId,
@@ -69,7 +71,6 @@ export class OrdersService {
             price: item.product.price, 
           })),
         })
-        this.logger.log('Order email job added to the queue');
 }
 
       await this.deactivateCart(cartId, session)
@@ -102,31 +103,44 @@ export class OrdersService {
         }
     }
 
-    async checkout(orderIds: string[], userId: string) {
-      const orders = await this.orderModel.find({ _id: { $in: orderIds }, 
-      user: userId,  status: 'PENDING_PAYMENT' 
-    }).populate('user', 'email');
+  async checkout(dto: CheckoutDTO, userId: string ) {
+  const { orderIds } = dto
 
-    if (!orders || orders.length === 0) {
-      throw new NotFoundException('No pending orders found');
-    }
+  try {
 
-    // Calculate total across all vendor orders
-    const totalAmount = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+    const orders = await this.orderModel.find({
+        _id: { $in: orderIds },
+        user: userId,
+        status: OrderStatus.PROCESSING
+        }).populate('user', 'email')
 
-    // Call payment provider
+    if (!orders.length) throw new NotFoundException('No pending orders found for payment');
+
+
+    const total = orders.reduce((sum, order) => sum + order.totalPrice, 0)
+    const email = (orders[0].user as any).email 
+
     const paymentSession = await this.paymentService.initializePayment({
-      amount: totalAmount,
+      amount: total * 100,
       customerId: userId,
-      orderId: orders.map(o => String(o._id)),
-      email: (orders[0].user as any).email, 
-    });
+      orderIds: orders.map(ord => String(ord._id)),
+      email
+    })
+
+    await this.orderModel.updateMany(
+    { _id: { $in: orderIds } },
+    { $set: { status: OrderStatus.COMPLETED, isPaid: true } }
+);
+
 
     return {
-      msg: 'Checkout initialized',
-      paymentSession,
-    };
-  }
+      msg: 'Checkout Initiated',
+      paymentSession
+          }
+    } catch (error) {
+      this.logger.warn(error)
+    }
+}
 
 
     private async createVendorOrder( userId: string, cart: CartDocument,

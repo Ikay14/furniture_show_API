@@ -8,6 +8,7 @@ import { LoginDTO } from '../user/DTO/login.user.dto';
 import { ValidateDTO } from '../user/DTO/otp.validate.dto';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { RequestOtpDto } from '../user/DTO/request.dto';
+import { FORGOT_PASSWORD_DTO } from '../user/DTO/forgot-password.dto';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -66,6 +67,16 @@ export class AuthController {
         });
 
         return { msg, user };
+    }
+
+    @Post('request-password') 
+    @ApiOperation({ summary: 'Request Reset Password' })
+    @ApiBody({ type: FORGOT_PASSWORD_DTO })
+    @ApiResponse({ status: 200, description: 'Reset Password Sent successfully' })
+    async requestForgotPassword(
+        @Body() dto: FORGOT_PASSWORD_DTO
+    ) {
+        return await this.authService.RequestForgetPassword(dto)
     }
 
     @Post('refresh-token') 

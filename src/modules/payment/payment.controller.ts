@@ -10,14 +10,6 @@ export class PaymentController {
         private paymentService: PaymentService
     ){}
 
-    @Post('initialize')
-    @ApiOperation({ summary: 'Initialize a new payment' })
-    @ApiBody({ type: PaymentDTO })
-    @ApiResponse({ status: 201, description: 'Payment initialized successfully' })
-    async initializePayment(@Body() paymentData: PaymentDTO) {
-        return this.paymentService.initializePayment(paymentData);
-    }
-
     @Get('verify/:ref')
     @ApiOperation({ summary: 'Verify a payment by reference' })
     @ApiParam({ name: 'ref', type: String, description: 'Payment reference' })

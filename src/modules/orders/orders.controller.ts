@@ -1,14 +1,16 @@
-import { Controller, Post, Get, Param, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, Req, UseGuards, Logger } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, } from '@nestjs/swagger';
 import { GetUser } from 'src/decorators/user.decorator';
 import { JwtAuthGuard } from 'src/guards/jwt.guard';
+import { CheckoutDTO } from './dto/checkout.dto';
 
 @ApiTags('Orders') 
 @ApiBearerAuth() 
 @UseGuards(JwtAuthGuard)
 @Controller('orders')
 export class OrdersController {
+  private readonly logger = new Logger(OrdersController.name)
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post(':cartId/create-order')
@@ -74,10 +76,9 @@ export class OrdersController {
     description: 'Payment failed',
   })
   async checkoutOrder(
-    @Body() orderIds: string[],
-    @GetUser('id') userId: string
-  ){
-    return this.ordersService.checkout(orderIds, userId)
+    @Body() dto: CheckoutDTO,
+    @GetUser('id') userId: string ){
+    return this.ordersService.checkout(dto, userId)
   }
 
   @Get(':id')

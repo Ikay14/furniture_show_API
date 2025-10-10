@@ -31,8 +31,8 @@ export class EmailProcessor extends WorkerHost {
       return;
     }
 
+    
     this.logger.log(`Processing job: ${type} for ${to} via ${channel}`);
-
         if (channel.includes('EMAIL') && config.template) {
           await this.mailService.sendMailWithTemplate(
             to,
@@ -42,8 +42,7 @@ export class EmailProcessor extends WorkerHost {
           )
           this.logger.log(`✉️ Email sent to ${to} using template ${config.template}`);
         }
-
-
+        
         if (channel.includes('APP')) { 
           await this.sendAppNotification(to, data);
         }
