@@ -8,6 +8,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 import { ConfigService } from '@nestjs/config';
+import bodyParser from 'body-parser';
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ async function bootstrap() {
   }),
   }); 
 
+  // app.use('/payment/webhook', bodyParser.raw({ type: '*/*' }))
   // Initialize the database connection
   try {
   await initializeDatabase()
@@ -45,8 +47,7 @@ async function bootstrap() {
     .addServer(`${process.env.BASE_URL || 'http://localhost:3000'}/api/v1`)
     .build();
 
-
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config)
   SwaggerModule.setup('api/docs', app, document)
 
 
@@ -54,11 +55,11 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({transform: true}))
 
-  app.enable('trust proxy');
+  app.enable('trust proxy')
 
-  app.setGlobalPrefix('api/v1', { exclude : ['api', 'api/v1', 'api/docs'] });
+  app.setGlobalPrefix('api/v1', { exclude : [ 'api', 'api/v1', 'api/docs', 'payment/webhook' ] })
 
-  app.useGlobalInterceptors(new TransformInterceptor());
+  app.useGlobalInterceptors(new TransformInterceptor())
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN || '*',

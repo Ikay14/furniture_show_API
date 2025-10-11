@@ -23,20 +23,18 @@ export class OrdersService {
         @InjectModel(Cart.name) private cartModel: Model<CartDocument>,
         @InjectModel(User.name) private userModel: Model<User>,
         @InjectModel(Product.name) private productModel: Model<Product>,
-        @InjectConnection() private readonly connection: Connection,
         private paymentService: PaymentService,
         private notificationService: NotificationService,
     ){}
 
     async createOrders(cartId: string, userId: string) {
-    const session = await this.connection.startSession();
-    session.startTransaction();
+
     try {
       const user = await this.getuser(userId)
 
-      const cart = await this.validateCart(cartId, userId, session)
+      const cart = await this.validateCart(cartId, userId)
 
-      const foundProducts = await this.validateProducts(cart, session)
+      const foundProducts = await this.validateProducts(cart)
 
       await this.checkStockLevels(cart, foundProducts)
 
@@ -44,9 +42,11 @@ export class OrdersService {
 
       const createdOrders = await Promise.all(
         Object.entries(vendorOrders).map(([vendorId, items]) =>
-          this.createVendorOrder(userId, cart, vendorId, items, session)
+          this.createVendorOrder(userId, cart, vendorId, items)
         )
       )
+   
+      await this.deactivateCart(cartId)
 
       // Populate the first order for notification
       const firstOrder = await this.orderModel
@@ -73,17 +73,12 @@ export class OrdersService {
         })
 }
 
-      await this.deactivateCart(cartId, session)
 
-      await session.commitTransaction()
       return { msg: 'Orders created successfully', orders: createdOrders }
     } catch (err) {
-      await session.abortTransaction()
-      throw err;
-    } finally {
-      session.endSession()
-    }
-  }
+      throw err
+    } 
+}
 
  
     async getUserOrders(userId: string): Promise<{ msg: string; orders: Order[] }> {
@@ -104,10 +99,9 @@ export class OrdersService {
     }
 
   async checkout(dto: CheckoutDTO, userId: string ) {
-  const { orderIds } = dto
+    const { orderIds } = dto
 
   try {
-
     const orders = await this.orderModel.find({
         _id: { $in: orderIds },
         user: userId,
@@ -127,40 +121,32 @@ export class OrdersService {
       email
     })
 
-    await this.orderModel.updateMany(
-    { _id: { $in: orderIds } },
-    { $set: { status: OrderStatus.COMPLETED, isPaid: true } }
-);
-
-
     return {
       msg: 'Checkout Initiated',
       paymentSession
-          }
+  }
+
     } catch (error) {
       this.logger.warn(error)
+      throw error
     }
 }
 
 
     private async createVendorOrder( userId: string, cart: CartDocument,
-          vendorId: string, items: any[], session: ClientSession ) {
+          vendorId: string, items: any[] ) {
          const totalPrice = items.reduce(
             (sum, item) => sum + item.product.price * item.quantity, 0);
 
-          // Reduce stock for only these vendor items
-          await this.reduceStock(items, session)
-
           // Create vendor-specific order record
-         const order = await this.createOrderRecord(userId, vendorId, cart.id, items, totalPrice, session)
+         const order = await this.createOrderRecord(userId, vendorId, cart.id, items, totalPrice)
 
          return order
 }
 
-  private async validateCart(cartId: string, userId: string, session: ClientSession) {
+  private async validateCart(cartId: string, userId: string) {
   const cart = await this.cartModel.findById({ _id: cartId, user: userId, isActive: true })
     .populate('items.product', 'name price vendor')
-    .session(session);
 
   if (!cart || cart.items.length === 0) throw new BadRequestException('Empty cart');
   return cart;
@@ -168,10 +154,10 @@ export class OrdersService {
 
 
 
-    private async validateProducts(cart: CartDocument, session: ClientSession) {
+    private async validateProducts(cart: CartDocument) {
     const productIds = cart.items.map((item) => item.product._id)
 
-    const foundProducts = await this.productModel.find({ _id: { $in: productIds } }).session(session)
+    const foundProducts = await this.productModel.find({ _id: { $in: productIds } })
 
     if (foundProducts.length !== productIds.length) {
     throw new NotFoundException('One or more products not found')
@@ -218,15 +204,6 @@ private async checkStockLevels(cart: CartDocument, foundProducts: any[]) {
   }
 }
 
-private async reduceStock(items: any[], session: ClientSession) {
-  for (const item of items) {
-    await this.productModel.updateOne(
-      { _id: item.product._id },
-      { $inc: { inStock: -item.quantity } },
-      { session }
-    );
-  }
-}
 
 
     private async createOrderRecord(
@@ -234,8 +211,7 @@ private async reduceStock(items: any[], session: ClientSession) {
         vendorId: string,
         cartId: string,
         items: any[],
-        totalPrice: number,
-        session: ClientSession
+        totalPrice: number
       ) {
         const order = await this.orderModel.create(
           [{
@@ -246,8 +222,7 @@ private async reduceStock(items: any[], session: ClientSession) {
             totalPrice,
             orderRef: generateOrderRef(),
             status: OrderStatus.PROCESSING,
-          }],
-          { session }
+          }]
         );
 
       return order[0]
@@ -263,8 +238,8 @@ private groupItemsByVendor(cart: CartDocument): Record<string, CartItemRaw[]> {
   }, {} as Record<string, CartItemRaw[]>)
 }
 
-  private async deactivateCart(cartId: string, session: ClientSession) {
-  await this.cartModel.updateOne({ _id: cartId }, { isActive: false }, { session })
+  private async deactivateCart(cartId: string) {
+  await this.cartModel.updateOne({ _id: cartId }, { isActive: false })
 }
 
   private async getuser(userId: string):Promise<{user: UserEntity}>{
