@@ -15,6 +15,9 @@ export class Review {
 
   @Prop()
   comment: string;
+
+  @Prop({ default: false })
+  isVerifiedPurchase: boolean;
 }
 
 export const ReviewSchema = SchemaFactory.createForClass(Review)

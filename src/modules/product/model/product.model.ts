@@ -77,6 +77,9 @@ export class Product extends Document {
     @Prop({ default: 0 })
     numReviews: number;
 
+    @Prop({ })
+    averageRating: number
+
     @Prop({ default: false })
     isDeleted: boolean;
 

@@ -173,7 +173,7 @@ private async checkStockLevels(cart: CartDocument, foundProducts: any[]) {
   for (const item of cart.items) {
     const itemProductId = item.product._id
       ? item.product._id.toString()
-      : item.product.toString();
+      : item.product.toString()
 
     const product = foundProducts.find(
       (p) => p._id.toString() === itemProductId

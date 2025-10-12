@@ -7,8 +7,7 @@ import { TransformInterceptor } from './common/global-Interceptor';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
-import { ConfigService } from '@nestjs/config';
-import bodyParser from 'body-parser';
+import * as bodyParser from 'body-parser';
 
 dotenv.config();
 
@@ -21,8 +20,8 @@ async function bootstrap() {
   }),
   }); 
 
-  // app.use('/payment/webhook', bodyParser.raw({ type: '*/*' }))
   // Initialize the database connection
+
   try {
   await initializeDatabase()
     console.log('Database initialized successfully');
@@ -50,6 +49,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config)
   SwaggerModule.setup('api/docs', app, document)
 
+
+  app.use('/payment/webhook', bodyParser.raw({ type: '*/*' }));
 
   app.use(cookieParser(process.env.COOKIE_SECRET));
 

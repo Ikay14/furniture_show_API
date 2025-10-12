@@ -171,7 +171,7 @@ export class PaymentService {
               updatedAt: new Date(),
             }, })
 
-        this.logger.warn(`Payment ${reference} failed and orders cancelled.`);
+        this.logger.warn(`Payment ${reference} failed and orders cancelled.`)
 }
 
 
@@ -188,7 +188,7 @@ export class PaymentService {
           const results = await Promise.all(orders);
 
           if (results.some(res => res.modifiedCount === 0)) {
-          throw new BadRequestException('One or more products are out of stock');
+          throw new BadRequestException('One or more products are out of stock')
       }
   }
 } 

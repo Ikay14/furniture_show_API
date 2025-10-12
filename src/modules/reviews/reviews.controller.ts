@@ -1,10 +1,14 @@
-import { Controller, Post, Get, Body, Req, Param, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, Param, Query, UseGuards, Patch, Delete } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create.review.dto';
 import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/guards/jwt.guard';
+import { GetUser } from 'src/decorators/user.decorator';
+import { UpdateReviewDTO } from './dto/update-review.dto';
 
 @ApiTags('Reviews')
 @Controller('reviews')
+@UseGuards(JwtAuthGuard)
 export class ReviewsController {
     constructor(private reviewService: ReviewsService) {}
 
@@ -14,9 +18,8 @@ export class ReviewsController {
     @ApiResponse({ status: 201, description: 'Review created successfully' })
     async createReview(
         @Body() createReview: CreateReviewDto,
-        @Req() req
+        @GetUser('id') userId: string
     ) {
-        const userId = req.user.id;
         return this.reviewService.createReview(createReview, userId);
     }
 
@@ -32,5 +35,22 @@ export class ReviewsController {
         @Query('limit') limit: number = 10
     ) {
         return this.reviewService.getReviewsByProduct(id, page, limit);
+    }
+
+    @Patch('update-review')
+    @ApiOperation({ summary: 'Update review for a product' })
+    @ApiBody({ type: UpdateReviewDTO, description: 'update Review data' })
+    @ApiResponse({ status: 201, description: 'Review update created successfully' })
+    async updateReview(dto: UpdateReviewDTO){
+        return this.reviewService.updateReview(dto)
+    }
+
+    @Delete(':reviewId:/del-review')
+    @ApiOperation({ summary: 'Delete review for a product' })
+    @ApiParam({ name: 'reviewId', type: String, description: 'reviewId' })
+    @ApiResponse({ status: 200, description: 'Review deleted successfully' })
+    async deleteReview(@Param('reviewId') reviewId: string
+    ){
+        return this.reviewService.deleteReview(reviewId)
     }
 }

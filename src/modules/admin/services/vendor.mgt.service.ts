@@ -8,7 +8,7 @@ import { InjectRedis } from "@nestjs-modules/ioredis";
 import { CACHE_TTL } from "src/config/db.config";
 import { DeclineVendorDto } from "../DTO/decline.dto";
 import { Logger } from "@nestjs/common";
-import { NotificationService } from "src/modules/notification/notification.service"; 
+import { NotificationService } from "src/modules/notification/notification.service";
 
 @Injectable()
 export class VendorManagementService {
@@ -151,29 +151,20 @@ export class VendorManagementService {
             }
         }
 
-        const declineApp = await this.vendorModel.findOneAndUpdate(filter, declineData, { new: true } ).lean()   
+        const declineApp = await this.vendorModel.findOneAndUpdate(filter, declineData, { new: true }).lean()
+
         if (!declineApp) {
-       
-        const existing = await this.vendorModel.findOne({ vendorId }).lean();
-        if (!existing) throw new NotFoundException(`Vendor application ${vendorId} not found`);
-        throw new BadRequestException(`Cannot decline: application is ${existing.status}`);
-        } 
+            throw new BadRequestException(`Cannot decline vendor: not found or already processed`);
+        }
 
         await this.redisCache.del(`vendor:application:${vendorId}`);
-
-         this.logger.warn(`Vendor ${vendorId} declined by admin ${adminId}. Reason: ${reason}`)
+        this.logger.log(`Vendor ${vendorId} declined by admin ${adminId}. Reason: ${reason}`);
 
         return {
-                success: true,
-                message: `Vendor ${vendorId} declined`,
-                data: {
-                vendorId: declineApp.vendorId,
-                status: declineApp.status,
-                reason: declineApp.reason,
-                declinedBy: declineApp.declinedBy,
-        },
-    };
-
+            success: true,
+            message: `Vendor ${vendorId} declined successfully`,
+            data: declineApp,
     }
+}
 
 }
