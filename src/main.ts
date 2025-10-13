@@ -21,12 +21,11 @@ async function bootstrap() {
   }); 
 
   // Initialize the database connection
-
   try {
   await initializeDatabase()
     console.log('Database initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize database:', error);
+    console.error('Failed to initialize database:', error)
     process.exit(1); 
   }
 

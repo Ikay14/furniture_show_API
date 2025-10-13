@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Req, Param, Query, UseGuards, Patch, Delete } from '@nestjs/common';
+import { Controller, Post, Get, Body, Req, Param, Query, UseGuards, Patch, Delete, Logger } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create.review.dto';
 import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
@@ -10,6 +10,7 @@ import { UpdateReviewDTO } from './dto/update-review.dto';
 @Controller('reviews')
 @UseGuards(JwtAuthGuard)
 export class ReviewsController {
+    
     constructor(private reviewService: ReviewsService) {}
 
     @Post('add-review')
@@ -45,7 +46,7 @@ export class ReviewsController {
         return this.reviewService.updateReview(dto)
     }
 
-    @Delete(':reviewId:/del-review')
+    @Delete(':reviewId/del-review')
     @ApiOperation({ summary: 'Delete review for a product' })
     @ApiParam({ name: 'reviewId', type: String, description: 'reviewId' })
     @ApiResponse({ status: 200, description: 'Review deleted successfully' })

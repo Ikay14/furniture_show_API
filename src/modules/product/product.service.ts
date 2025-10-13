@@ -26,7 +26,7 @@ export class ProductService {
                 if (filterBy.maxPrice) filter['price'].$lte = filterBy.maxPrice;
             }
 
-            // Category filter (ObjectId)
+            // Category filter
             if (filterBy.category) {
               filter['category'] = filterBy.category
             }
@@ -40,9 +40,7 @@ export class ProductService {
                 .lean()
     
             // if no products found, throw an error
-                if( filter && !products.length) throw new BadRequestException('No products found for the given query');
-    
-                if (!products.length && products.length === 0) throw new BadRequestException('No products found');
+                if( filter || !products.length) throw new BadRequestException('No products found');
     
             // return the products
             return {
