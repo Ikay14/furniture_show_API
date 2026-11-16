@@ -30,7 +30,7 @@ export class CloudinaryService {
   async uploadFile(
     file: Express.Multer.File,
     folder: string = 'uploads',
-    resourceType: 'image' | 'auto' = 'auto'
+    resourceType: 'image' | 'raw' | 'auto' = 'auto'
   ): Promise<UploadApiResponse> {
 
     if (!file) {
@@ -55,6 +55,27 @@ export class CloudinaryService {
       );
       toStream(file.buffer).pipe(uploadStream);
     });
+  }
+
+  async upload3dModel(
+    file: Express.Multer.File,
+    folder: string = 'ar-models',
+  ): Promise<{ format: 'glb' | 'usdz'; secure_url: string; public_id: string }> {
+    if (!file) {
+      throw new Error('3D model file is required');
+    }
+    const lower = (file.originalname || '').toLowerCase();
+    const format = lower.endsWith('.glb') ? 'glb' : lower.endsWith('.usdz') ? 'usdz' : null;
+    if (!format) {
+      throw new Error('Unsupported 3D model format. Only .glb and .usdz files are allowed');
+    }
+
+    const uploaded = await this.uploadFile(file, folder, 'raw');
+    return {
+      format,
+      secure_url: uploaded.secure_url,
+      public_id: uploaded.public_id,
+    };
   }
 
 

@@ -1,7 +1,7 @@
-import { Controller, UseInterceptors, Param, Query, Post, Patch, Body, Get, Delete, Req, UseGuards, UploadedFiles } from "@nestjs/common";
+import { Controller, UseInterceptors, Param, Query, Post, Patch, Body, Get, Delete, Req, UseGuards, UploadedFiles, UploadedFile, UnauthorizedException } from "@nestjs/common";
 import { ProductManagementService } from "../services/product-management.service";
 import { ProductDTO } from "src/modules/product/DTO/product.dto";
-import { FilesInterceptor } from "@nestjs/platform-express";
+import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
 import { UpdateDTO } from "src/modules/product/DTO/updateProduct.dto";
 import { JwtAuthGuard } from "src/guards/jwt.guard";
 import { Roles } from "src/decorators/roles.decorator";
@@ -80,5 +80,20 @@ export class ProductManagementController {
     async deleteProduct(
         @Body() dto: DeleteProductDTO){
         return this.productService.deleteProduct(dto)
+    }
+
+    @Post(':productId/ar-asset')
+    @UseInterceptors(FileInterceptor('model'))
+    @ApiOperation({ summary: 'Attach a .glb or .usdz 3D/WebAR model to a product' })
+    @ApiResponse({ status: 201, description: '3D AR asset attached successfully' })
+    async attachArAsset(
+        @Param('productId') productId: string,
+        @GetUser('vendor') vendor: { _id?: string; id?: string },
+        @UploadedFile() file: Express.Multer.File,
+        @Query('scale') scale: string = '1',
+    ) {
+        const vendorId = String(vendor?._id ?? vendor?.id ?? '');
+        if (!vendorId) throw new UnauthorizedException('Vendor profile not found');
+        return this.productService.attachArAsset(productId, vendorId, file, Number(scale) || 1);
     }
 } 

@@ -136,7 +136,7 @@ export class OrdersService {
     private async createVendorOrder( userId: string, cart: CartDocument,
           vendorId: string, items: any[] ) {
          const totalPrice = items.reduce(
-            (sum, item) => sum + item.product.price * item.quantity, 0);
+            (sum, item) => sum + (item.unitPrice ?? item.product.price) * item.quantity, 0);
 
           // Create vendor-specific order record
          const order = await this.createOrderRecord(userId, vendorId, cart.id, items, totalPrice)
