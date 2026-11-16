@@ -1,7 +1,8 @@
-import { Controller, Post, UseInterceptors, Req, Body, Patch, Get, Param, Query, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Query } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { ApiTags, ApiOperation, ApiQuery, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { FilterListDto } from './DTO/product-query.dto';
+import { RoomBundleDto } from './DTO/room-bundle.dto';
 
 
 @ApiTags('Products')
@@ -26,6 +27,26 @@ export class ProductController {
 
         return this.productService.getAllProducts(pageNum, limitNum, filter)
     }  
+
+    @Get('fit-my-space')
+    @ApiOperation({ summary: 'Search furniture that fits room & doorway dimensions' })
+    @ApiResponse({ status: 200, description: 'Matching furniture returned' })
+    async fitMySpace(
+        @Query('page') page: string = '1',
+        @Query('limit') limit: string = '10',
+        @Query() filter: FilterListDto,
+    ) {
+        const pageNum = Math.max(Number(page) || 1, 1);
+        const limitNum = Math.max(Number(limit) || 10, 1);
+        return this.productService.fitMySpaceSearch(pageNum, limitNum, filter);
+    }
+
+    @Post('room-bundle')
+    @ApiOperation({ summary: 'Generate smart room furniture bundles within budget and space' })
+    @ApiResponse({ status: 201, description: 'Room bundles generated' })
+    async generateRoomBundle(@Body() dto: RoomBundleDto) {
+        return this.productService.generateRoomBundle(dto);
+    }
 
     @Get(':id')
     @ApiOperation({ summary: 'Get a product by its ID' })
