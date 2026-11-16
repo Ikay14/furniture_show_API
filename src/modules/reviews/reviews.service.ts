@@ -33,7 +33,7 @@ export class ReviewsService {
         if (!isPurchased) throw new ForbiddenException('You can only review products you have purchased');
 
         // Check if already reviewed
-        const existing = await this.reviewModel.findOne({ userId, productId })
+        const existing = await this.reviewModel.findOne({ user: userId, product: productId })
         if (existing) throw new BadRequestException('You already reviewed this product')
 
         const newReview = await this.reviewModel.create({
@@ -90,7 +90,9 @@ export class ReviewsService {
 
         const getReview = await this.reviewModel.findByIdAndDelete(reviewId)
 
-        if(!getReview) throw new NotFoundException(`${reviewId} not a found`)
+        if(!getReview) throw new NotFoundException(`${reviewId} not found`)
+
+        await this.calcAverageRating(getReview.product.toString())
 
         return { msg: 'review deleted'}    
     }
@@ -98,7 +100,7 @@ export class ReviewsService {
     // Helpers: ****************************************************** 
     private async calcAverageRating(productId: string){
         const stats = await this.reviewModel.aggregate([
-            { $match: { productId: new Types.ObjectId(productId) } },
+            { $match: { product: new Types.ObjectId(productId) } },
             {
                 $group: {
                     _id: '$product',
@@ -111,7 +113,7 @@ export class ReviewsService {
         const { avgRating = 0, count = 0 } = stats[0] || {}
 
         await this.productModel.findByIdAndUpdate(productId, {
-            $set: { averageRating: avgRating, reviewCount: count },
+            $set: { averageRating: avgRating, numReviews: count },
     });
         return { avgRating, count }
 }

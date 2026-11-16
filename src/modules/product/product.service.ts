@@ -1,11 +1,11 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Product } from './model/product.model';
 import { Model } from 'mongoose';
 import { Category } from '../admin/model/category.model';
 import { FilterListDto } from './DTO/product-query.dto';
 
-
+@Injectable()
 export class ProductService {
     constructor(
         @InjectModel(Product.name) private productModel: Model<Product>,
@@ -14,16 +14,19 @@ export class ProductService {
 
     async getAllProducts(page: number, limit: number, filterBy: FilterListDto = {}) {
 
-            const filter: any = {}
+            const filter: Record<string, any> = {
+                isDeleted: { $ne: true },
+                status: 'active',
+            };
 
             if(filterBy.name) {
                 filter['name'] = { $regex: filterBy.name, $options: 'i' }
             }
 
-            if (filterBy.minPrice || filterBy.maxPrice) {
+            if (filterBy.minPrice !== undefined || filterBy.maxPrice !== undefined) {
                 filter['price'] = {}
-                if (filterBy.minPrice) filter['price'].$gte = filterBy.minPrice;
-                if (filterBy.maxPrice) filter['price'].$lte = filterBy.maxPrice;
+                if (filterBy.minPrice !== undefined) filter['price'].$gte = Number(filterBy.minPrice);
+                if (filterBy.maxPrice !== undefined) filter['price'].$lte = Number(filterBy.maxPrice);
             }
 
             // Category filter
@@ -31,24 +34,22 @@ export class ProductService {
               filter['category'] = filterBy.category
             }
 
-            
-            const products = await this.productModel
-                .find(filter)
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .populate('category')
-                .lean()
-    
-            // if no products found, throw an error
-                if( filter || !products.length) throw new BadRequestException('No products found');
-    
-            // return the products
+            const [products, total] = await Promise.all([
+                this.productModel
+                    .find(filter)
+                    .skip((page - 1) * limit)
+                    .limit(limit)
+                    .populate('category')
+                    .lean(),
+                this.productModel.countDocuments(filter),
+            ]);
+
             return {
                 products,
-                 pagination: {
+                pagination: {
                     page,
                     limit,
-                    total: await this.productModel.countDocuments(filter),
+                    total,
                 },
             }
 }
@@ -57,7 +58,7 @@ export class ProductService {
             const product = await this.productModel.findById(productId)
             .populate('category', 'name')
     
-            if(!product || product.inStock === 0) throw new NotFoundException('Product Found')
+            if(!product || product.isDeleted || product.inStock === 0) throw new NotFoundException('Product not found')
     
             return {
                 msg: 'Product returned successfully',

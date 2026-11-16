@@ -11,10 +11,14 @@ export class OrderManagementService {
         private orderModel: Model<Order>
     ) {}
 
-    async getOrder( filter: { isDelivered?: boolean, isPaid?: boolean, status?: string }, 
-        page, limit): Promise<{ msg: string, order: Order[] }> {
+    async getOrder(
+        vendorId: string,
+        filter: { isDelivered?: boolean, isPaid?: boolean, status?: string }, 
+        page = 1,
+        limit = 10
+    ): Promise<{ msg: string, order: Order[] }> {
 
-        const query = {}
+        const query: Record<string, any> = { vendor: vendorId }
         if (filter.isDelivered !== undefined) {
             query['isDelivered'] = filter.isDelivered;
         }
@@ -25,7 +29,7 @@ export class OrderManagementService {
             query['status'] = filter.status;
         }
         
-        const order = await this.orderModel.find()
+        const order = await this.orderModel
         .find(query)
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
@@ -37,7 +41,7 @@ export class OrderManagementService {
         }
     }
 
-    async updateOrderStatus(orderId: string, status: OrderStatus
+    async updateOrderStatus(vendorId: string, orderId: string, status: OrderStatus
     ): Promise<{ msg: string; order: Order }> {
         
     const updateFields: any = { status }
@@ -54,9 +58,11 @@ export class OrderManagementService {
     updateFields.isDelivered = false
     }
 
-    const order = await this.orderModel.findByIdAndUpdate(orderId, updateFields, {
-    new: true,
-    });
+    const order = await this.orderModel.findOneAndUpdate(
+      { _id: orderId, vendor: vendorId },
+      updateFields,
+      { new: true },
+    );
 
     if (!order) {
     throw new BadRequestException(`Order not found with ID: ${orderId}`)

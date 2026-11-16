@@ -1,9 +1,10 @@
-import { Controller, Get, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Patch, Query, UnauthorizedException, UseGuards } from "@nestjs/common";
 import { OrderManagementService } from "../services/order.management.service";
 import { OrderStatus } from "src/modules/orders/model/order.model";
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from "src/guards/jwt.guard";
 import { Roles } from "src/decorators/roles.decorator";
+import { GetUser } from "src/decorators/user.decorator";
 
 @ApiTags('vendor Orders Management')
 @Controller('vendor-orders-mgt')
@@ -23,28 +24,37 @@ export class OrderManagementController {
     @ApiQuery({ name: 'limit', required: false, type: Number, example: 10, description: 'Number of orders per page' })
     @ApiResponse({ status: 200, description: 'Orders fetched successfully' })
     async getOrders(
+        @GetUser('vendor') vendor: { _id?: string; id?: string },
         @Query('isDelivered') isDelivered: boolean,
         @Query('isPaid') isPaid: boolean,
         @Query('status') status: string,
-        @Query('page') page: number,
-        @Query('limit') limit: number
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10
     ) {
+        const vendorId = String(vendor?._id ?? vendor?.id ?? '');
+        if (!vendorId) throw new UnauthorizedException('Vendor profile not found');
+
         return this.orderManagementService.getOrder(
+            vendorId,
             { isDelivered, isPaid, status },
             page,
             limit
         )
     }
 
-    @Get('update-status')
+    @Patch('update-status')
     @ApiOperation({ summary: 'Update the status of an order' })
     @ApiQuery({ name: 'orderId', required: true, type: String, description: 'Order ID' })
     @ApiQuery({ name: 'status', required: true, enum: OrderStatus, description: 'New order status' })
     @ApiResponse({ status: 200, description: 'Order status updated successfully' })
     async updateOrderStatus(
+        @GetUser('vendor') vendor: { _id?: string; id?: string },
         @Query('orderId') orderId: string,
         @Query('status') status: OrderStatus
     ) {
-        return this.orderManagementService.updateOrderStatus(orderId, status)
+        const vendorId = String(vendor?._id ?? vendor?.id ?? '');
+        if (!vendorId) throw new UnauthorizedException('Vendor profile not found');
+
+        return this.orderManagementService.updateOrderStatus(vendorId, orderId, status)
     }
 }
