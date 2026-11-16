@@ -12,6 +12,7 @@ import { Product, ProductSchema } from '../product/model/product.model';
 import { Payment,PaymentSchema } from '../payment/model/payment.model';
 import { NotificationModule } from '../notification/notification.module';
 import { AuthModule } from '../auth/auth.module';
+import { DeliveryPricingService } from './delivery-pricing.service';
 
 @Module({
   imports: [
@@ -28,8 +29,8 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule
   ],  
   
-  providers: [OrdersService,PaymentService],
+  providers: [OrdersService, PaymentService, DeliveryPricingService],
   controllers: [OrdersController],
-  exports: [OrdersService]
+  exports: [OrdersService, DeliveryPricingService]
 })
 export class OrdersModule {}

@@ -49,6 +49,15 @@ export class OrdersController {
     return this.ordersService.createOrders(cartId, userId)
   }
 
+  @Post('shipping-quote')
+  @ApiOperation({ summary: 'Preview volumetric delivery and white-glove assembly fees' })
+  async getShippingQuote(
+    @Body() dto: CheckoutDTO,
+    @GetUser('id') userId: string,
+  ) {
+    return this.ordersService.getShippingQuote(dto, userId);
+  }
+
   @Post('checkout')
    @ApiOperation({
     summary: 'Checkout Orders',
