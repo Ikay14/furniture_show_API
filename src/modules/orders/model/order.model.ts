@@ -12,6 +12,22 @@ export enum OrderStatus {
   CANCELLED = 'cancelled'
 }
 
+export enum ProductionStage {
+  DESIGN_CONFIRMED = 'design_confirmed',
+  IN_CARPENTRY = 'in_carpentry',
+  UPHOLSTERY_FINISHING = 'upholstery_finishing',
+  QUALITY_CHECK = 'quality_check',
+  OUT_FOR_DELIVERY = 'out_for_delivery',
+}
+
+export interface ProductionMilestone {
+  stage: ProductionStage;
+  notes?: string;
+  photoUrls?: string[];
+  completedAt: Date;
+  updatedBy?: string;
+}
+
 export interface Items {
     product: Types.ObjectId | Product
     quantity: number
@@ -66,6 +82,26 @@ export class Order extends Document {
 
     @Prop({ type: String, default: 'pending' })
     status: OrderStatus
+
+    @Prop({ type: Object })
+    customSpecs?: Record<string, any>;
+
+    @Prop({ type: Date })
+    estimatedCompletionDate?: Date;
+
+    @Prop({
+      type: [
+        {
+          stage: { type: String, enum: Object.values(ProductionStage), required: true },
+          notes: { type: String },
+          photoUrls: { type: [String], default: [] },
+          completedAt: { type: Date, default: Date.now },
+          updatedBy: { type: String },
+        },
+      ],
+      default: [],
+    })
+    milestones?: ProductionMilestone[];
 
     @Prop({ type: Date })
     createdAt: Date;

@@ -86,6 +86,12 @@ export class Product extends Document {
     @Prop({ default: 'active' })
     status: 'active' | 'inactive' | 'draft';
 
+    @Prop({ default: false })
+    isCustomOrder?: boolean;
+
+    @Prop({ default: 14 })
+    estimatedLeadTimeDays?: number;
+
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true })
     vendor: Types.ObjectId; 
 

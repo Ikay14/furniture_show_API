@@ -83,5 +83,32 @@ export class NotificationService {
   this.logger.log('order notification sent')
 }
 
+  async sendOrderMilestoneUpdate(payload: {
+    email: string;
+    customerName: string;
+    orderId: string;
+    stage: string;
+    notes?: string;
+    photoUrls?: string[];
+  }) {
+    await this.eventQueue.sendNotification(
+      'ORDER_MILESTONE',
+      {
+        type: 'ORDER_MILESTONE',
+        to: payload.email,
+        subject: `Order ${payload.orderId} Update: ${payload.stage}`,
+        data: {
+          customerName: payload.customerName,
+          orderId: payload.orderId,
+          stage: payload.stage,
+          notes: payload.notes || '',
+          photoUrls: payload.photoUrls || [],
+        },
+        channel: ['EMAIL', 'APP'],
+      },
+      { delay: 1000, priority: 2 },
+    );
+  }
+
 
 }

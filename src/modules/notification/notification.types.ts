@@ -7,6 +7,7 @@ export type NotificationType =
   | 'VENDOR_APPROVAL'
   | 'REQUEST_OTP'
   | 'ORDER_CREATED'
+  | 'ORDER_MILESTONE'
   | 'REQUEST_PASSWORD_OTP'
 
 export interface NotificationPayload {

@@ -81,6 +81,15 @@ export class OrdersController {
     return this.ordersService.checkout(dto, userId)
   }
 
+  @Get(':orderId/timeline')
+  @ApiOperation({ summary: 'Get custom carpentry production timeline for an order' })
+  async getOrderTimeline(
+    @Param('orderId') orderId: string,
+    @GetUser('id') userId: string,
+  ) {
+    return this.ordersService.getOrderTimeline(orderId, userId);
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Get user orders',
