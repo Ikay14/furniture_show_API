@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
 import { Order } from './model/order.model';
 import { Model, Connection, ClientSession, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -14,6 +14,7 @@ import { NotificationService } from '../notification/notification.service';
 import { Vendor } from '../vendor/model/vendor.model';
 import { toUserEntity, UserEntity } from '../user/DTO/user-entity.dto';
 import { CheckoutDTO } from './dto/checkout.dto';
+import { DeliveryPricingService } from './delivery-pricing.service';
 
 @Injectable()
 export class OrdersService {
@@ -25,6 +26,7 @@ export class OrdersService {
         @InjectModel(Product.name) private productModel: Model<Product>,
         private paymentService: PaymentService,
         private notificationService: NotificationService,
+        @Optional() private deliveryPricingService?: DeliveryPricingService,
     ){}
 
     async createOrders(cartId: string, userId: string) {
@@ -98,24 +100,75 @@ export class OrdersService {
         }
     }
 
+  async getShippingQuote(dto: CheckoutDTO, userId: string) {
+    const orders = await this.orderModel
+      .find({
+        _id: { $in: dto.orderIds },
+        user: userId,
+        status: OrderStatus.PROCESSING,
+      })
+      .populate('items.product', 'dimensions weight price')
+      .populate('vendor', 'city state')
+      .lean();
+
+    if (!orders.length) {
+      throw new NotFoundException('No pending orders found for shipping quote');
+    }
+
+    const pricing = this.deliveryPricingService ?? new DeliveryPricingService();
+    return {
+      msg: 'Shipping quote calculated',
+      ...pricing.calculateQuote(orders as any, dto.shippingAddress, Boolean(dto.requiresAssembly)),
+    };
+  }
+
   async checkout(dto: CheckoutDTO, userId: string ) {
-    const { orderIds } = dto
+    const { orderIds, shippingAddress, requiresAssembly = false } = dto
 
   try {
     const orders = await this.orderModel.find({
         _id: { $in: orderIds },
         user: userId,
         status: OrderStatus.PROCESSING
-        }).populate('user', 'email')
+        })
+        .populate('user', 'email')
+        .populate('items.product', 'dimensions weight price')
+        .populate('vendor', 'city state')
 
     if (!orders.length) throw new NotFoundException('No pending orders found for payment');
 
+    let total = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+    let quoteSummary: ReturnType<DeliveryPricingService['calculateQuote']> | undefined;
 
-    const total = orders.reduce((sum, order) => sum + order.totalPrice, 0)
+    if ((shippingAddress || requiresAssembly) && this.deliveryPricingService) {
+      quoteSummary = this.deliveryPricingService.calculateQuote(
+        orders as any,
+        shippingAddress,
+        requiresAssembly,
+      );
+      total = quoteSummary.grandTotal;
+
+      await Promise.all(
+        quoteSummary.breakdown.map((entry) =>
+          this.orderModel.updateOne(
+            { _id: entry.orderId },
+            {
+              $set: {
+                deliveryFee: entry.deliveryFee,
+                assemblyFee: entry.assemblyFee,
+                requiresAssembly,
+                ...(shippingAddress ? { shippingAddress } : {}),
+              },
+            },
+          ),
+        ),
+      );
+    }
+
     const email = (orders[0].user as any).email 
 
     const paymentSession = await this.paymentService.initializePayment({
-      amount: total * 100,
+      amount: Math.round(total * 100),
       customerId: userId,
       orderIds: orders.map(ord => String(ord._id)),
       email
@@ -123,6 +176,7 @@ export class OrdersService {
 
     return {
       msg: 'Checkout Initiated',
+      ...(quoteSummary ? { quote: quoteSummary } : {}),
       paymentSession
   }
 

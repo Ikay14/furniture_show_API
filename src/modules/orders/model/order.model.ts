@@ -46,6 +46,29 @@ export class Order extends Document {
     @Prop({ type: Number, default: 0 })
     totalPrice: number;               
 
+    @Prop({ type: Number, default: 0 })
+    deliveryFee: number;
+
+    @Prop({ type: Number, default: 0 })
+    assemblyFee: number;
+
+    @Prop({ type: Boolean, default: false })
+    requiresAssembly: boolean;
+
+    @Prop({
+      type: {
+        street: { type: String },
+        city: { type: String },
+        state: { type: String },
+      },
+      _id: false,
+    })
+    shippingAddress?: {
+      street?: string;
+      city?: string;
+      state?: string;
+    };
+
     @Prop({ type: Boolean, default: false })
     isPaid: boolean;
 
