@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Payment,PaymentStatus } from './model/payment.model'
 import { ClientSession, Connection, Model } from 'mongoose';
@@ -8,6 +8,7 @@ import { paystackConfig } from 'src/config/paystack.config';
 import { generateTxRef } from 'src/utils/generate.txref';
 import axios from 'axios';
 import { Product } from '../product/model/product.model';
+import { EscrowService } from './escrow.service';
 
 
 @Injectable()
@@ -17,7 +18,8 @@ export class PaymentService {
     @InjectModel(Payment.name) private readonly paymentModel: Model<Payment>,
     @InjectModel(Order.name) private readonly orderModel: Model<Order>,
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
-    @InjectConnection() private readonly connection: Connection
+    @InjectConnection() private readonly connection: Connection,
+    @Optional() private readonly escrowService?: EscrowService,
   ) {}
 
   async initializePayment(paymentData: PaymentDTO) {
@@ -128,6 +130,14 @@ export class PaymentService {
             updatedAt: new Date(),
         },
       })
+
+      if (this.escrowService) {
+        const paidOrders = await this.orderModel
+          .find({ _id: { $in: data.metadata.orderIds } })
+          .select('_id vendor totalPrice')
+          .lean();
+        await this.escrowService.holdOrderFunds(paidOrders, reference, data.currency || 'NGN');
+      }
     }
           await session.commitTransaction()
            session.endSession()

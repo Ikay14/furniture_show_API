@@ -26,6 +26,7 @@ import { OrdersModule } from '../orders/orders.module';
 import { NotificationModule } from '../notification/notification.module';
 import { User, UserSchema } from '../user/model/user.model';
 import { forwardRef } from '@nestjs/common'
+import { EscrowModule } from '../payment/escrow.module';
 
 
 
@@ -55,6 +56,7 @@ import { forwardRef } from '@nestjs/common'
     ProductModule,
     OrdersModule,
     NotificationModule,
+    EscrowModule,
     forwardRef( ()=> VendorModule)
   ],
   controllers: [AdminController, CategoryController, UserManagementController, VendorManagementController],

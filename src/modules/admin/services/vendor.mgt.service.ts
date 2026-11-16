@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException, Optional, UnauthorizedException } from "@nestjs/common";
 import { Roles, Vendor, VendorStatus } from "src/modules/vendor/model/vendor.model";
 import { Admin } from "../model/admin.model";
 import { InjectModel } from "@nestjs/mongoose";
@@ -9,6 +9,7 @@ import { CACHE_TTL } from "src/config/db.config";
 import { DeclineVendorDto } from "../DTO/decline.dto";
 import { Logger } from "@nestjs/common";
 import { NotificationService } from "src/modules/notification/notification.service";
+import { EscrowService } from "src/modules/payment/escrow.service";
 
 @Injectable()
 export class VendorManagementService {
@@ -17,7 +18,8 @@ export class VendorManagementService {
         // @InjectModel(Admin.name) private adminModel: Model<Admin>, 
         @InjectModel(Vendor.name) private vendorModel: Model<Vendor>,
         @InjectRedis() private redisCache: Redis,
-        private notificationService: NotificationService
+        private notificationService: NotificationService,
+        @Optional() private readonly escrowService?: EscrowService,
 
     ){}
 
@@ -83,6 +85,14 @@ export class VendorManagementService {
             vendorName: updatedApp.storeName,
             status: updatedApp.status
         })
+
+        if (this.escrowService && updatedApp._id) {
+            try {
+                await this.escrowService.registerPaystackRecipient(String(updatedApp._id));
+            } catch (err) {
+                this.logger.warn(`Paystack recipient registration skipped for vendor ${vendorId}: ${err.message}`);
+            }
+        }
         
         const safeApp = { ...updatedApp }
 

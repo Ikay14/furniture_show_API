@@ -1,15 +1,20 @@
-import { Controller, Post, Get, Req, Param,Logger, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Get, Req, Param, Logger, ForbiddenException, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
 import { PaymentService } from './payment.service';
-import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiResponse } from '@nestjs/swagger';
+import { EscrowService } from './escrow.service';
+import { ApiTags, ApiOperation, ApiBody, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { authenticatePaystackSignature } from 'src/utils/verifyPaystackSignature';
+import { JwtAuthGuard } from 'src/guards/jwt.guard';
+import { Roles } from 'src/decorators/roles.decorator';
+import { GetUser } from 'src/decorators/user.decorator';
 
 @ApiTags('Payment')
 @Controller('payment')
 export class PaymentController {
     private readonly logger = new Logger(PaymentController.name)
     constructor(
-        private paymentService: PaymentService
+        private paymentService: PaymentService,
+        private escrowService: EscrowService,
     ){}
 
     @Get('verify/:ref')
@@ -47,6 +52,26 @@ export class PaymentController {
                     break
             }
             return { received: true }         
+    }
+
+    @Get('escrow/vendor')
+    @UseGuards(JwtAuthGuard)
+    @Roles('vendor')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Get escrow balances and payout history for the authenticated vendor' })
+    async getVendorEscrow(@GetUser('vendor') vendor: { _id?: string; id?: string }) {
+        const vendorId = String(vendor?._id ?? vendor?.id ?? '');
+        if (!vendorId) throw new UnauthorizedException('Vendor profile not found');
+        return this.escrowService.getVendorEscrowSummary(vendorId);
+    }
+
+    @Post('escrow/:orderId/release')
+    @UseGuards(JwtAuthGuard)
+    @Roles('admin')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Release held escrow funds for a delivered order to the vendor' })
+    async releaseOrderEscrow(@Param('orderId') orderId: string) {
+        return this.escrowService.queueVendorPayout(orderId);
     }
 }
 
