@@ -242,6 +242,26 @@ private groupItemsByVendor(cart: CartDocument): Record<string, CartItemRaw[]> {
   await this.cartModel.updateOne({ _id: cartId }, { isActive: false })
 }
 
+  async getOrderTimeline(orderId: string, userId: string) {
+    const order = await this.orderModel
+      .findOne({ _id: orderId, user: userId })
+      .select('orderId status estimatedCompletionDate milestones customSpecs')
+      .lean();
+
+    if (!order) {
+      throw new NotFoundException(`Order ${orderId} not found`);
+    }
+
+    return {
+      msg: 'Order timeline fetched successfully',
+      orderId: order.orderId,
+      status: order.status,
+      estimatedCompletionDate: order.estimatedCompletionDate,
+      customSpecs: order.customSpecs,
+      milestones: order.milestones || [],
+    };
+  }
+
   private async getuser(userId: string):Promise<{user: UserEntity}>{
     const user = await this.userModel.findById(userId).lean()
     if(!user) throw new NotFoundException('user not found')
