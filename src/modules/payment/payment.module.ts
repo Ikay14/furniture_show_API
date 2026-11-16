@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ProductModule } from '../product/product.module';
 import { Product, ProductSchema } from '../product/model/product.model';
 import { OrdersModule } from '../orders/orders.module';
+import { EscrowModule } from './escrow.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { OrdersModule } from '../orders/orders.module';
         { name: Product.name, schema: ProductSchema },
       ]),
       ProductModule,
-      OrdersModule
+      OrdersModule,
+      EscrowModule,
     ],
   providers: [PaymentService],
   controllers: [PaymentController]

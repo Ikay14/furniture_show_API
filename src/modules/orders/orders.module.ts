@@ -12,6 +12,7 @@ import { Product, ProductSchema } from '../product/model/product.model';
 import { Payment,PaymentSchema } from '../payment/model/payment.model';
 import { NotificationModule } from '../notification/notification.module';
 import { AuthModule } from '../auth/auth.module';
+import { EscrowModule } from '../payment/escrow.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { AuthModule } from '../auth/auth.module';
     ProductModule,
     CartsModule,
     NotificationModule,
-    AuthModule
+    AuthModule,
+    EscrowModule,
   ],  
   
   providers: [OrdersService,PaymentService],
