@@ -34,7 +34,7 @@ export class Order extends Document {
     @Prop({  type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
     user: User
 
-    @Prop({ vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true }})
+    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true })
     vendor: Vendor
 
    @Prop([{

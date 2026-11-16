@@ -52,6 +52,8 @@ export class ProductManagementService {
             vendorName: vendor.storeName
         })
 
+        await this.invalidateVendorProductCache(vendorId);
+
         return {
             msg: 'Product created successfully',
             newProduct
@@ -63,7 +65,7 @@ export class ProductManagementService {
     async getAllVendorProducts(
         vendorId: string, page: number, limit: number ) {
         
-        const cacheKey = `vendor-products:${page}:${limit}` 
+        const cacheKey = `vendor-products:${vendorId}:${page}:${limit}` 
         const cachedvenProducts = await this.redisCache.get(cacheKey)
         if(cachedvenProducts) return JSON.parse(cachedvenProducts)
 
@@ -71,28 +73,32 @@ export class ProductManagementService {
         if(!isVendor) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
         this.logger.log(`Fetching products for vendorId: ${vendorId}, page: ${page}, limit: ${limit}`);
 
-        const products = await this.productModel.find({ vendor: vendorId, isDeleted: false })
+        const filter = { vendor: vendorId, isDeleted: false };
+        const [products, total] = await Promise.all([
+            this.productModel.find(filter)
                 .populate('vendor', 'storeName email')
                 .populate('category')
                 .skip((page - 1) * limit)
                 .limit(limit)
-                .lean()
-        
+                .lean(),
+            this.productModel.countDocuments(filter),
+        ]);
 
         // if no products found, throw an error
         if (!products || products.length === 0) throw new BadRequestException('No products found for the given query');
 
-        await this.redisCache.set(cacheKey, JSON.stringify(products), 'EX', CACHE_TTL)
-        // return the products
-        return {
+        const responsePayload = {
             msg: 'Products fetched successfully', 
             pagination: {
                 page,
                 limit,
-                total: await this.productModel.countDocuments({ vendor: vendorId })
+                total,
             },
             products
-        }
+        };
+
+        await this.redisCache.set(cacheKey, JSON.stringify(responsePayload), 'EX', CACHE_TTL)
+        return responsePayload;
     }
 
     async getAProduct(productId: string):Promise<{msg: string, product: Product}>{
@@ -115,12 +121,19 @@ async updateProduct(updateProductDto: UpdateDTO, images: Express.Multer.File[]){
     const isVendor =  await this.vendorModel.findById(vendorId)
     if(!isVendor) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
 
-    const imageUpload = await Promise.all(
+    const imageUpload = images?.length
+        ? await Promise.all(
             images.map(image => this.cloudinaryService.uploadFile(image, 'products', 'image'))
-        );    
+          )
+        : [];
+    const updatePayload: Record<string, any> = { ...updateProductDto };
+    if (imageUpload.length > 0) {
+        updatePayload.images = imageUpload.map(imag => imag.secure_url);
+    }
+
     const product = await this.productModel.findOneAndUpdate(
-        { productId },
-        { $set: updateProductDto, images: imageUpload.map(imag => imag.secure_url) },
+        { productId, vendor: vendorId },
+        { $set: updatePayload },
         { new: true, runValidators: true }
     )
     if(!product) throw new NotFoundException('Product Not Found')
@@ -130,6 +143,8 @@ async updateProduct(updateProductDto: UpdateDTO, images: Express.Multer.File[]){
             email: isVendor.email,
             vendorName: isVendor.storeName
         })    
+
+    await this.invalidateVendorProductCache(vendorId);
 
     return {
         msg: 'product updated successfully',
@@ -146,14 +161,23 @@ async deleteProduct(dto: DeleteProductDTO ): Promise<{ msg: string }> {
     if (!isVendor) throw new UnauthorizedException('Unauthorized action, Not a Vendor ')
 
     const deletedProduct = await this.productModel.findOneAndUpdate(
-        { productId },
+        { productId, vendor: vendorId },
         { $set: { isDeleted: true } },
         { new: true }
     )
     if (!deletedProduct) throw new NotFoundException('Product Not Found')
 
+    await this.invalidateVendorProductCache(vendorId);
+
     return {
         msg: 'Product deleted successfully'
+    }
+}
+
+private async invalidateVendorProductCache(vendorId: string): Promise<void> {
+    const keys = await this.redisCache.keys(`vendor-products:${vendorId}:*`);
+    if (keys.length > 0) {
+        await this.redisCache.del(...keys);
     }
 }
 

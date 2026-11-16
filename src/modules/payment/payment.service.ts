@@ -31,7 +31,7 @@ export class PaymentService {
     txRef,
     email,
     amount,
-    orderIds, 
+    orderId: orderIds, 
     paymentDate: new Date(),
     customerId,
     status: PaymentStatus.INITIATED,
@@ -95,18 +95,40 @@ export class PaymentService {
 
       const data = response.data.data;
 
+      const existingPayment = await this.paymentModel.findOne({ reference }).session(session);
+      if (existingPayment && existingPayment.status === PaymentStatus.SUCCESSFUL) {
+        await session.commitTransaction();
+        return {
+          msg: 'Payment already verified',
+          data,
+        };
+      }
+
       if (data.status !== 'success') {
       await this.paymentModel.updateOne(
         { reference },
         { status: PaymentStatus.FAILED },
+        { session },
     );
         throw new BadRequestException('Payment verification failed');
   }
 
-      await this.reduceStock(data.metadata?.orderIds, session)
+      const orderIds: string[] = Array.isArray(data.metadata?.orderIds)
+        ? data.metadata.orderIds
+        : existingPayment?.orderId || [];
+
+      if (orderIds.length > 0) {
+        const orders = await this.orderModel
+          .find({ _id: { $in: orderIds } })
+          .session(session);
+        const allItems = orders.flatMap((order) => order.items || []);
+        if (allItems.length > 0) {
+          await this.reduceStock(allItems, session);
+        }
+      }
 
       await this.paymentModel.updateOne(
-        {  reference },
+        { reference },
         {
           paymentMethod: data.channel,
           status: PaymentStatus.SUCCESSFUL,
@@ -114,23 +136,25 @@ export class PaymentService {
           paymentDetails: data.authorization,
           paymentDate: data.transaction_date,
         },
+        { session },
     )
 
 
-      if (Array.isArray(data.metadata?.orderIds)) {
+      if (orderIds.length > 0) {
       await this.orderModel.updateMany(
-        { _id: { $in: data.metadata.orderIds } },
+        { _id: { $in: orderIds } },
         {
             $set: {
             status: OrderStatus.COMPLETED,
             isPaid: true,
+            paidAt: new Date(),
             paymentMethod: data.channel || 'card',
             updatedAt: new Date(),
         },
-      })
+      },
+      { session })
     }
           await session.commitTransaction()
-           session.endSession()
           return {
           msg: 'Payment verified successfully',
           data,
@@ -178,13 +202,14 @@ export class PaymentService {
 
 // Helpers: ***********************************************************************
         private async reduceStock(items: any[], session: ClientSession) {
-          const orders = items.map(item =>
-            this.productModel.updateOne(
-              { _id: item.product._id, inStock: { $gte: item.quantity } },
+          const orders = items.map(item => {
+            const productId = item.product?._id ?? item.product;
+            return this.productModel.updateOne(
+              { _id: productId, inStock: { $gte: item.quantity } },
               { $inc: { inStock: -item.quantity } },
               { session }
-            )
-          )
+            );
+          })
           const results = await Promise.all(orders);
 
           if (results.some(res => res.modifiedCount === 0)) {
