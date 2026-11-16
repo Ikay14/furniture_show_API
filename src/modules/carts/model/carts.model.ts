@@ -22,7 +22,9 @@ export class Cart extends Document
   @Prop([{
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
     vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
-    quantity: { type: Number, required: true, default: 1 }
+    quantity: { type: Number, required: true, default: 1 },
+    variantSku: { type: String },
+    unitPrice: { type: Number },
   }])
   items: CartItemRaw[]
 

@@ -6,6 +6,8 @@ export interface CartItemRaw {
     product: Types.ObjectId | Product
     vendor: Types.ObjectId | Vendor
     quantity: number
+    variantSku?: string
+    unitPrice?: number
     _id?: Types.ObjectId
 }
 

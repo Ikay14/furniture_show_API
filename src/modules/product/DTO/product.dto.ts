@@ -1,6 +1,41 @@
 import { Type } from "class-transformer";
-import { IsObject, IsString, ValidateNested, IsArray } from "class-validator";
-import { ApiProperty } from '@nestjs/swagger';
+import { IsObject, IsString, ValidateNested, IsArray, IsOptional, IsNumber } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class ProductVariantDto {
+  @ApiProperty({ example: 'SOFA-EMERALD-VELVET' })
+  @IsString()
+  sku: string;
+
+  @ApiProperty({ example: 'Emerald Velvet' })
+  @IsString()
+  colorName: string;
+
+  @ApiPropertyOptional({ example: '#046307' })
+  @IsOptional()
+  @IsString()
+  colorHex?: string;
+
+  @ApiPropertyOptional({ example: 'Velvet' })
+  @IsOptional()
+  @IsString()
+  material?: string;
+
+  @ApiProperty({ example: 50, description: 'Price adjustment relative to base price' })
+  @Type(() => Number)
+  @IsNumber()
+  priceDelta: number;
+
+  @ApiProperty({ example: 5 })
+  @Type(() => Number)
+  @IsNumber()
+  inStock: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+}
 
 export class DimensionsDto {
   @ApiProperty({ example: 50, description: 'Width of the product in centimeters' })
@@ -58,4 +93,11 @@ export class ProductDTO {
   @ValidateNested()
   @Type(() => DimensionsDto)
   dimensions: DimensionsDto;
+
+  @ApiPropertyOptional({ type: [ProductVariantDto], description: 'Optional swatch/material SKU variants' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductVariantDto)
+  variants?: ProductVariantDto[];
 }

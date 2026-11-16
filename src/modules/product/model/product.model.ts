@@ -68,6 +68,44 @@ export class Product extends Document {
     @Prop({ required: true})
     colorOptions: string[]
 
+    @Prop({
+      type: {
+        glbUrl: { type: String },
+        usdzUrl: { type: String },
+        scale: { type: Number, default: 1 },
+      },
+      _id: false,
+    })
+    arAssets?: {
+      glbUrl?: string;
+      usdzUrl?: string;
+      scale?: number;
+    };
+
+    @Prop({
+      type: [
+        {
+          sku: { type: String, required: true },
+          colorName: { type: String, required: true },
+          colorHex: { type: String },
+          material: { type: String },
+          priceDelta: { type: Number, default: 0 },
+          inStock: { type: Number, default: 0 },
+          imageUrl: { type: String },
+        },
+      ],
+      default: [],
+    })
+    variants?: Array<{
+      sku: string;
+      colorName: string;
+      colorHex?: string;
+      material?: string;
+      priceDelta: number;
+      inStock: number;
+      imageUrl?: string;
+    }>;
+
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Review' })
     reviews: Types.ObjectId;
 

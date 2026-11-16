@@ -157,4 +157,38 @@ async deleteProduct(dto: DeleteProductDTO ): Promise<{ msg: string }> {
     }
 }
 
+async attachArAsset(
+    productId: string,
+    vendorId: string,
+    file: Express.Multer.File,
+    scale: number = 1,
+): Promise<{ msg: string; product: Product }> {
+    const isVendor = await this.vendorModel.findById(vendorId);
+    if (!isVendor) throw new UnauthorizedException('Unauthorized action, Not a Vendor');
+
+    let uploaded: { format: 'glb' | 'usdz'; secure_url: string };
+    try {
+        uploaded = await this.cloudinaryService.upload3dModel(file, 'ar-models');
+    } catch (error) {
+        throw new BadRequestException(error.message);
+    }
+
+    const updateField =
+        uploaded.format === 'glb'
+            ? { 'arAssets.glbUrl': uploaded.secure_url, 'arAssets.scale': scale }
+            : { 'arAssets.usdzUrl': uploaded.secure_url, 'arAssets.scale': scale };
+
+    const product = await this.productModel.findOneAndUpdate(
+        { productId, vendor: vendorId },
+        { $set: updateField },
+        { new: true },
+    );
+    if (!product) throw new NotFoundException('Product Not Found');
+
+    return {
+        msg: '3D AR asset attached successfully',
+        product,
+    };
+}
+
 }

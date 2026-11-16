@@ -15,22 +15,39 @@ export class CartService {
 
   async addToCart(userId: string, dto: CreateCartDto) {
   
-  for (const { productId, quantity } of dto.items) {
+  for (const { productId, quantity, variantSku } of dto.items) {
     const product = await this.findProductWithVendor(productId);
+    let unitPrice = product.price;
+
+    if (variantSku) {
+      const variant = product.variants?.find((v) => v.sku === variantSku);
+      if (!variant) {
+        throw new NotFoundException(`Variant SKU ${variantSku} not found for product ${product.name}`);
+      }
+      if (variant.inStock < quantity) {
+        throw new BadRequestException(`Variant ${variantSku} is out of stock`);
+      }
+      unitPrice = product.price + (variant.priceDelta || 0);
+    }
 
     const cart = await this.getOrCreateCart(userId);
 
     const existingItem = cart.items.find(
-      (item) => item.product.toString() === productId,
+      (item) =>
+        item.product.toString() === productId &&
+        (item.variantSku || undefined) === (variantSku || undefined),
     );
 
     if (existingItem) {
       existingItem.quantity += quantity;
+      existingItem.unitPrice = unitPrice;
     } else {
       cart.items.push({
         product: product._id as Types.ObjectId,
         vendor: product.vendor._id,
         quantity,
+        variantSku,
+        unitPrice,
       });
     }
 
@@ -148,7 +165,7 @@ private async calculateTotalPrice(cart: CartDocument): Promise<void> {
   await cart.populate('items.product', 'price');
 
   const total = cart.items.reduce((sum, item) => {
-    const price = (item.product as any)?.price || 0;
+    const price = item.unitPrice ?? ((item.product as any)?.price || 0);
     return sum + price * item.quantity;
   }, 0);
 
